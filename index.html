@@ -1,0 +1,296 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🌿 Conscious Crave</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 2em;
+      max-width: 1000px;
+      margin: auto;
+      background: #f7fafc;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2e7d32;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      background-color: #43a047;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #2e7d32;
+    }
+    .output {
+      background: #ffffff;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      margin: 5px 5px 5px 0;
+      background: #e8f5e9;
+      font-size: 14px;
+      color: #2e7d32;
+      font-weight: 600;
+    }
+    .analysis-section {
+      white-space: pre-wrap;
+      background: #f9fbe7;
+      padding: 15px;
+      border-radius: 8px;
+      line-height: 1.6;
+    }
+    .healthier-alternatives {
+      margin-top: 20px;
+      padding: 15px;
+      background: #e3f2fd;
+      border-radius: 8px;
+    }
+    .product-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .product-item {
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .product-item:hover {
+      transform: scale(1.03);
+    }
+    .product-item h3 {
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .speaker-btn {
+      margin-top: 10px;
+      padding: 10px 16px;
+      border: none;
+      background: #3f51b5;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .translate-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 999;
+    }
+    .controls-row {
+      display: flex;
+      gap: 10px;
+    }
+    #qr-reader {
+      margin-top: 20px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="translate-container">
+  <div id="google_translate_element"></div>
+</div>
+
+<h1>🌱 Conscious Crave - The Truth Behind Taste</h1>
+
+<input type="text" id="productName" placeholder="Enter product name or scan barcode">
+<div class="controls-row">
+  <button onclick="searchProducts()">🔍 Search</button>
+  <button onclick="startVoiceInput()">🎤 Mic</button>
+  <button onclick="toggleCamera()">📷 Scan</button>
+</div>
+
+<div id="qr-reader" style="width:100%"></div>
+<div id="productList" class="product-list"></div>
+<div class="output" id="output"></div>
+
+<script>
+const OPENAI_API_KEY = "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";
+let products = [];
+
+async function translateText(text, toLang = 'en') {
+  const res = await fetch("https://libretranslate.com/translate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ q: text, source: "auto", target: toLang, format: "text" })
+  });
+  const data = await res.json();
+  return data.translatedText || text;
+}
+
+async function searchProducts() {
+  const name = document.getElementById("productName").value.trim();
+  const outputDiv = document.getElementById("output");
+  const productListDiv = document.getElementById("productList");
+
+  if (!name) return outputDiv.innerHTML = "<p>Please enter a product name.</p>";
+  outputDiv.innerHTML = "<p>🔍 Searching...</p>";
+
+  const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${name}&search_simple=1&json=1`);
+  const data = await res.json();
+  products = data.products.filter(p => p.product_name && p.ingredients_text);
+
+  if (!products.length) return outputDiv.innerHTML = "<p>No products found.</p>";
+
+  productListDiv.innerHTML = "";
+  products.forEach((p, i) => {
+    const productItem = document.createElement("div");
+    productItem.className = "product-item";
+    productItem.innerHTML = `
+      <a href="javascript:void(0);" onclick="fetchAndAnalyzeProduct(${i})">
+        <img src="${p.image_front_url || ''}" alt="${p.product_name}">
+        <h3>${p.product_name}</h3>
+      </a>
+    `;
+    productListDiv.appendChild(productItem);
+  });
+
+  outputDiv.innerHTML = "";
+}
+
+async function fetchAndAnalyzeProduct(index) {
+  const product = products[index];
+  const outputDiv = document.getElementById("output");
+  outputDiv.innerHTML = "<p>🔍 Analyzing...</p>";
+
+  const ingredientsText = await translateText(product.ingredients_text);
+  const imageUrl = product.image_front_url || "";
+  const isVegan = product.ingredients_analysis_tags?.includes("en:non-vegan") ? "❌" : "✅";
+  const isVegetarian = product.ingredients_analysis_tags?.includes("en:non-vegetarian") ? "❌" : "✅";
+
+  const analysisPrompt = `You are a food expert. Analyze this ingredient list:\n\n${ingredientsText}\n\nFor each ingredient:\n- List name\n- Status: Harmful / Safe / Artificial\n- Reason (if not Safe)\n- Suggest healthier alternative (if applicable)\n\nFormat it clearly.`;
+
+  const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: analysisPrompt }],
+      temperature: 0.7
+    })
+  });
+
+  const aiData = await aiRes.json();
+  const analysis = aiData.choices?.[0]?.message?.content || "AI failed.";
+
+  const harmfulIngredients = ["sugar", "corn syrup", "palm oil", "artificial flavor"];
+  const highlightedAnalysis = analysis.replace(new RegExp(`(${harmfulIngredients.join("|")})`, "gi"), "<span class='highlight'>$1</span>");
+
+  const healthierPrompt = `List healthier alternative PRODUCTS (not ingredients) for ${product.product_name}. Include brand names if possible.`;
+
+  const healthyRes = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: healthierPrompt }],
+      temperature: 0.7
+    })
+  });
+
+  const healthyData = await healthyRes.json();
+  const healthierProducts = healthyData.choices?.[0]?.message?.content || "No alternatives found.";
+
+  outputDiv.innerHTML = `
+    <h2>${product.product_name}</h2>
+    ${imageUrl ? `<img src="${imageUrl}" alt="Product Image">` : ""}
+    <p><strong>Ingredients:</strong><br>${ingredientsText}</p>
+    <div>
+      <span class="badge">Vegan: ${isVegan}</span>
+      <span class="badge">Vegetarian: ${isVegetarian}</span>
+    </div>
+    <h3>🧠 AI Health Analysis:</h3>
+    <div class="analysis-section">${highlightedAnalysis}</div>
+    <div class="healthier-alternatives">
+      <h3>🌟 Healthier Alternative Products:</h3>
+      <p>${healthierProducts}</p>
+    </div>
+    <button class="speaker-btn" onclick="speakText('Product: ${product.product_name}. ${ingredientsText}')">🔊 Speak</button>
+  `;
+}
+
+function speakText(text) {
+  const synth = window.speechSynthesis;
+  const utterance = new SpeechSynthesisUtterance(text);
+  synth.speak(utterance);
+}
+
+function startVoiceInput() {
+  if (!('webkitSpeechRecognition' in window)) return alert("Voice recognition not supported");
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript;
+    document.getElementById("productName").value = transcript;
+  };
+  recognition.start();
+}
+
+let scanner;
+function toggleCamera() {
+  const qrReader = document.getElementById("qr-reader");
+  if (qrReader.style.display === "none") {
+    qrReader.style.display = "block";
+    scanner = new Html5Qrcode("qr-reader");
+    scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
+      (decodedText) => {
+        document.getElementById("productName").value = decodedText;
+        scanner.stop().then(() => qrReader.style.display = "none");
+      },
+      (err) => {}
+    );
+  } else {
+    scanner.stop().then(() => {
+      qrReader.style.display = "none";
+    });
+  }
+}
+
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    includedLanguages: 'en,hi,kn,ta,te,fr,de,es,ml,bn,gu,ur,zh-CN',
+    layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+  }, 'google_translate_element');
+}
+</script>
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+</body>
+</html>
