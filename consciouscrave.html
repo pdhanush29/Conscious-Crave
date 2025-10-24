@@ -1,295 +1,514 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>🌿 Conscious Crave</title>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      padding: 2em;
-      max-width: 1000px;
-      margin: auto;
-      background: #f7fafc;
-      color: #333;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #2e7d32;
-    }
-    input, button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    button {
-      background-color: #43a047;
-      color: white;
-      font-weight: bold;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    button:hover {
-      background-color: #2e7d32;
-    }
-    .output {
-      background: #ffffff;
-      padding: 20px;
-      margin-top: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.07);
-    }
-    .badge {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 20px;
-      margin: 5px 5px 5px 0;
-      background: #e8f5e9;
-      font-size: 14px;
-      color: #2e7d32;
-      font-weight: 600;
-    }
-    .analysis-section {
-      white-space: pre-wrap;
-      background: #f9fbe7;
-      padding: 15px;
-      border-radius: 8px;
-      line-height: 1.6;
-    }
-    .healthier-alternatives {
-      margin-top: 20px;
-      padding: 15px;
-      background: #e3f2fd;
-      border-radius: 8px;
-    }
-    .product-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 15px;
-      margin-top: 20px;
-    }
-    .product-item {
-      background: #ffffff;
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      text-align: center;
-      cursor: pointer;
-      transition: transform 0.2s ease;
-    }
-    .product-item:hover {
-      transform: scale(1.03);
-    }
-    .product-item h3 {
-      font-size: 14px;
-      margin-top: 8px;
-    }
-    .speaker-btn {
-      margin-top: 10px;
-      padding: 10px 16px;
-      border: none;
-      background: #3f51b5;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .translate-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 999;
-    }
-    .controls-row {
-      display: flex;
-      gap: 10px;
-    }
-    #qr-reader {
-      margin-top: 20px;
-      display: none;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conscious Crave - The Truth Behind Taste</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<style>
+  #globalLoader .loading-dots span { width: 8px; height: 8px; margin: 0 3px; background-color: #4b5563; border-radius: 50%; display:inline-block; animation: bounce 1.2s infinite ease-in-out both; }
+  #globalLoader .loading-dots span:nth-child(1){ animation-delay: -0.24s;}
+  #globalLoader .loading-dots span:nth-child(2){ animation-delay: -0.12s;}
+  @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+  #globalLoader.hidden{ display:none; }
+  #globalLoader { display:flex; }
+</style>
+    <style>
+
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .product-card {
+            transition: all 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .clean-score-excellent {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .clean-score-good {
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+        }
+        .clean-score-fair {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        }
+        .clean-score-poor {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+        }
+        .ingredient-risk-high {
+            background-color: rgba(255, 99, 71, 0.2);
+            border-left: 4px solid tomato;
+        }
+        .ingredient-risk-medium {
+            background-color: rgba(255, 165, 0, 0.2);
+            border-left: 4px solid orange;
+        }
+        .ingredient-risk-low {
+            background-color: rgba(144, 238, 144, 0.2);
+            border-left: 4px solid lightgreen;
+        }
+        .slide-in {
+            animation: slideIn 0.3s forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .registration-step {
+            display: none;
+        }
+        .registration-step.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+        .search-loading::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: translateY(-50%) rotate(360deg); }
+        }
+        .product-selection-card {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .product-selection-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .product-selection-card.selected {
+            border: 2px solid #3b82f6;
+            background-color: #eff6ff;
+        }
+        .no-products {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+        .alternative-product {
+            transition: all 0.3s ease;
+            border: 1px solid #e5e7eb;
+        }
+        .alternative-product:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        .loading-dots {
+            display: inline-flex;
+            align-items: center;
+        }
+        .loading-dots span {
+            width: 6px;
+            height: 6px;
+            margin: 0 2px;
+            background-color: #9ca3af;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .loading-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        .loading-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
 </head>
-<body>
-
-<div class="translate-container">
-  <div id="google_translate_element"></div>
-</div>
-
-<h1>🌱 Conscious Crave - The Truth Behind Taste</h1>
-
-<input type="text" id="productName" placeholder="Enter product name or scan barcode">
-<div class="controls-row">
-  <button onclick="searchProducts()">🔍 Search</button>
-  <button onclick="startVoiceInput()">🎤 Mic</button>
-  <button onclick="toggleCamera()">📷 Scan</button>
-</div>
-
-<div id="qr-reader" style="width:100%"></div>
-<div id="productList" class="product-list"></div>
-<div class="output" id="output"></div>
-
-<script>
-const OPENAI_API_KEY = "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";
-let products = [];
-
-async function translateText(text, toLang = 'en') {
-  const res = await fetch("https://libretranslate.com/translate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ q: text, source: "auto", target: toLang, format: "text" })
-  });
-  const data = await res.json();
-  return data.translatedText || text;
-}
-
-async function searchProducts() {
-  const name = document.getElementById("productName").value.trim();
-  const outputDiv = document.getElementById("output");
-  const productListDiv = document.getElementById("productList");
-
-  if (!name) return outputDiv.innerHTML = "<p>Please enter a product name.</p>";
-  outputDiv.innerHTML = "<p>🔍 Searching...</p>";
-
-  const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${name}&search_simple=1&json=1`);
-  const data = await res.json();
-  products = data.products.filter(p => p.product_name && p.ingredients_text);
-
-  if (!products.length) return outputDiv.innerHTML = "<p>No products found.</p>";
-
-  productListDiv.innerHTML = "";
-  products.forEach((p, i) => {
-    const productItem = document.createElement("div");
-    productItem.className = "product-item";
-    productItem.innerHTML = `
-      <a href="javascript:void(0);" onclick="fetchAndAnalyzeProduct(${i})">
-        <img src="${p.image_front_url || ''}" alt="${p.product_name}">
-        <h3>${p.product_name}</h3>
-      </a>
-    `;
-    productListDiv.appendChild(productItem);
-  });
-
-  outputDiv.innerHTML = "";
-}
-
-async function fetchAndAnalyzeProduct(index) {
-  const product = products[index];
-  const outputDiv = document.getElementById("output");
-  outputDiv.innerHTML = "<p>🔍 Analyzing...</p>";
-
-  const ingredientsText = await translateText(product.ingredients_text);
-  const imageUrl = product.image_front_url || "";
-  const isVegan = product.ingredients_analysis_tags?.includes("en:non-vegan") ? "❌" : "✅";
-  const isVegetarian = product.ingredients_analysis_tags?.includes("en:non-vegetarian") ? "❌" : "✅";
-
-  const analysisPrompt = `You are a food expert. Analyze this ingredient list:\n\n${ingredientsText}\n\nFor each ingredient:\n- List name\n- Status: Harmful / Safe / Artificial\n- Reason (if not Safe)\n- Suggest healthier alternative (if applicable)\n\nFormat it clearly.`;
-
-  const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: analysisPrompt }],
-      temperature: 0.7
-    })
-  });
-
-  const aiData = await aiRes.json();
-  const analysis = aiData.choices?.[0]?.message?.content || "AI failed.";
-
-  const harmfulIngredients = ["sugar", "corn syrup", "palm oil", "artificial flavor"];
-  const highlightedAnalysis = analysis.replace(new RegExp(`(${harmfulIngredients.join("|")})`, "gi"), "<span class='highlight'>$1</span>");
-
-  const healthierPrompt = `List healthier alternative PRODUCTS (not ingredients) for ${product.product_name}. Include brand names if possible.`;
-
-  const healthyRes = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: healthierPrompt }],
-      temperature: 0.7
-    })
-  });
-
-  const healthyData = await healthyRes.json();
-  const healthierProducts = healthyData.choices?.[0]?.message?.content || "No alternatives found.";
-
-  outputDiv.innerHTML = `
-    <h2>${product.product_name}</h2>
-    ${imageUrl ? `<img src="${imageUrl}" alt="Product Image">` : ""}
-    <p><strong>Ingredients:</strong><br>${ingredientsText}</p>
-    <div>
-      <span class="badge">Vegan: ${isVegan}</span>
-      <span class="badge">Vegetarian: ${isVegetarian}</span>
+<body class="gradient-bg min-h-screen font-sans flex flex-col">
+  <!-- Header -->
+  <header class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
+          <i class="fas fa-leaf"></i>
+        </div>
+        <h1 class="text-xl font-bold text-gray-800">Conscious Crave</h1>
+      </div>
+      <button id="darkModeToggle" class="p-2 rounded-full hover:bg-gray-100">
+        <i class="fas fa-moon text-gray-600"></i>
+      </button>
     </div>
-    <h3>🧠 AI Health Analysis:</h3>
-    <div class="analysis-section">${highlightedAnalysis}</div>
-    <div class="healthier-alternatives">
-      <h3>🌟 Healthier Alternative Products:</h3>
-      <p>${healthierProducts}</p>
+  </header>
+
+  <!-- Chat Interface -->
+  <main id="chatContainer" class="flex-grow overflow-y-auto px-4 py-6 max-w-3xl mx-auto w-full space-y-6">
+    <div class="text-center text-gray-500 mt-4">
+      <h2 class="text-2xl font-semibold text-gray-700 mb-2">The Truth Behind Taste 🍽️</h2>
+      <p>Ask anything about food — ingredients, health impact, or alternatives!</p>
     </div>
-    <button class="speaker-btn" onclick="speakText('Product: ${product.product_name}. ${ingredientsText}')">🔊 Speak</button>
-  `;
-}
+  </main>
 
-function speakText(text) {
-  const synth = window.speechSynthesis;
-  const utterance = new SpeechSynthesisUtterance(text);
-  synth.speak(utterance);
-}
 
-function startVoiceInput() {
-  if (!('webkitSpeechRecognition' in window)) return alert("Voice recognition not supported");
-  const recognition = new webkitSpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.onresult = function(event) {
-    const transcript = event.results[0][0].transcript;
-    document.getElementById("productName").value = transcript;
-  };
-  recognition.start();
-}
 
-let scanner;
-function toggleCamera() {
-  const qrReader = document.getElementById("qr-reader");
-  if (qrReader.style.display === "none") {
-    qrReader.style.display = "block";
-    scanner = new Html5Qrcode("qr-reader");
-    scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
-      (decodedText) => {
-        document.getElementById("productName").value = decodedText;
-        scanner.stop().then(() => qrReader.style.display = "none");
-      },
-      (err) => {}
-    );
-  } else {
-    scanner.stop().then(() => {
-      qrReader.style.display = "none";
+  <!-- Chat Input -->
+  <footer class="bg-white border-t shadow-sm sticky bottom-0 z-50">
+    <div class="max-w-3xl mx-auto p-4 flex items-center gap-3">
+      <button id="uploadImageBtn" class="text-gray-500 hover:text-blue-500">
+        <i class="fas fa-camera text-xl"></i>
+      </button>
+
+<!-- Scan Barcode Button -->
+<button id="barcodeBtn" class="text-gray-600 hover:text-blue-500 flex flex-col items-center">
+  <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-1">
+    <i class="fas fa-barcode text-xl"></i>
+  </div>
+  <span class="text-sm">Scan Barcode</span>
+</button>
+
+      <input type="file" id="imageUpload" accept="image/*" class="hidden" capture="environment">
+      <input id="userInput" type="text" placeholder="Ask about a product or ingredient..."
+        class="flex-grow border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 outline-none">
+      <button id="sendBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Loader -->
+  <div id="loaderOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center text-white z-50">
+    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-400 mb-4"></div>
+    <p class="text-lg font-semibold">Thinking...</p>
+  </div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest"></script>
+ <script type="module">
+import OpenAI from "https://cdn.jsdelivr.net/npm/openai@4.26.0/+esm";
+
+const client = new OpenAI({
+  apiKey: "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",
+  dangerouslyAllowBrowser: true,
+});
+
+const chatContainer = document.getElementById("chatContainer");
+const userInput = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
+
+// ---------------------------
+// 💬 Chat Helpers
+// ---------------------------
+function appendMessage(role, content, isLoading = false) {
+  const msgDiv = document.createElement("div");
+  msgDiv.className = `flex ${role === "user" ? "justify-end" : "justify-start"} fade-in`;
+  msgDiv.innerHTML = `
+    <div class="max-w-[80%] px-4 py-3 rounded-2xl mb-2 shadow-sm ${
+      role === "user" ? "bg-blue-500 text-white" : "bg-gray-50 text-gray-800"
+    }">${isLoading ? '<span class="loading-dots"><span></span><span></span><span></span></span>' : content}</div>`;
+  chatContainer.appendChild(msgDiv);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+  return msgDiv;
+}
+function updateMessage(el, html) { el.innerHTML = html; chatContainer.scrollTop = chatContainer.scrollHeight; }
+function showLoader(show = true) { document.getElementById("loaderOverlay").classList.toggle("hidden", !show); }
+
+
+
+/* ------------------------------
+   📷 Barcode Scanning
+-------------------------------*/
+async function startBarcodeScanner() {
+  // Create overlay
+  const overlay = document.createElement("div");
+  overlay.className =
+    "fixed inset-0 bg-black bg-opacity-70 z-50 flex flex-col items-center justify-center p-4";
+  overlay.innerHTML = `
+    <div class="bg-white rounded-xl p-4 shadow-lg flex flex-col items-center">
+      <h3 class="text-lg font-semibold text-gray-800 mb-2">Scan Barcode</h3>
+      <video id="barcodeVideo" class="w-80 h-60 rounded-lg mb-2 bg-black"></video>
+      <button id="closeScanner" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Cancel</button>
+      <p class="text-xs text-gray-500 mt-2">Align the barcode within the frame</p>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const codeReader = new ZXing.BrowserMultiFormatReader();
+  const video = overlay.querySelector("#barcodeVideo");
+  const closeBtn = overlay.querySelector("#closeScanner");
+
+  // Start camera
+  try {
+    const devices = await codeReader.listVideoInputDevices();
+    await codeReader.decodeFromVideoDevice(devices[0].deviceId, video, async (result, err) => {
+      if (result) {
+        const barcode = result.text;
+        codeReader.reset();
+        overlay.remove();
+        await analyzeBarcode(barcode);
+      }
     });
+  } catch (err) {
+    alert("Camera access failed or not supported.");
+    overlay.remove();
+  }
+
+  closeBtn.onclick = () => {
+    codeReader.reset();
+    overlay.remove();
+  };
+}
+
+/* ------------------------------
+   🔍 Fetch product by barcode
+-------------------------------*/
+async function analyzeBarcode(code) {
+  const aiBubble = appendMessage("assistant", "🔎 Scanning barcode...", true);
+  try {
+    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json`);
+    const data = await res.json();
+    if (!data || !data.product) {
+      updateMessage(aiBubble, "❌ No product found for that barcode.");
+      return;
+    }
+    await analyzeSelectedProduct(data.product);
+  } catch (err) {
+    console.error(err);
+    updateMessage(aiBubble, "⚠️ Couldn’t fetch product details. Try again.");
   }
 }
 
-function googleTranslateElementInit() {
-  new google.translate.TranslateElement({
-    pageLanguage: 'en',
-    includedLanguages: 'en,hi,kn,ta,te,fr,de,es,ml,bn,gu,ur,zh-CN',
-    layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-  }, 'google_translate_element');
+/* ------------------------------
+   🔘 Hook button
+-------------------------------*/
+document.getElementById("barcodeBtn").addEventListener("click", startBarcodeScanner);
+
+// ---------------------------
+// 🧠 GPT Structured Analysis
+// ---------------------------
+async function getProductAnalysis(product) {
+  showLoader(true);
+  const prompt = `
+  You are a professional nutrition assistant for "Conscious Crave".
+  Analyze this packaged food product and return a structured JSON.
+  
+  Product Name: ${product.product_name || "Unknown"}
+  Brand: ${product.brands || "Unknown"}
+  Ingredients: ${product.ingredients_text || "Not available"}
+  Nutrients: ${JSON.stringify(product.nutriments || {})}
+  Nutri-Score: ${product.nutriscore_grade || "N/A"}
+  
+  Return strictly in this JSON format:
+  {
+    "summary": "1-paragraph short overview",
+    "ingredients": ["...","..."],
+    "nutrition_table": [
+      {"nutrient": "Energy", "value": "xx kcal"},
+      {"nutrient": "Sugar", "value": "xx g"},
+      {"nutrient": "Fat", "value": "xx g"},
+      {"nutrient": "Protein", "value": "xx g"},
+      {"nutrient": "Sodium", "value": "xx mg"}
+    ],
+    "benefits": ["...","..."],
+    "concerns": ["...","..."],
+    "alternatives": [
+      {
+        "name": "Product Name",
+        "reason": "Why it’s healthier",
+        "links": {
+          "blinkit": "https://blinkit.com/s/?q=Product+Name",
+          "bigbasket": "https://www.bigbasket.com/ps/?q=Product+Name",
+          "zepto": "https://www.zepto.com/search?query=Product+Name"
+        }
+      }
+    ]
+  }`;
+
+  const completion = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      { role: "system", content: "You are a structured data nutrition assistant for Conscious Crave." },
+      { role: "user", content: prompt },
+    ],
+    temperature: 0.5,
+    max_tokens: 1000,
+  });
+
+  showLoader(false);
+  let content = completion.choices[0].message.content.trim().replace(/```json|```/g, "").trim();
+  try {
+    return JSON.parse(content);
+  } catch (e) {
+    console.error("Parsing error:", e, content);
+    return null;
+  }
 }
+
+// ---------------------------
+// 🎨 Render Beautiful Output
+// ---------------------------
+function renderProductCard(product, analysis) {
+  const img = product.image_url || "https://via.placeholder.com/120";
+  const ingredientsHTML = analysis.ingredients
+    .map((i) => `<li class="text-sm text-gray-700">${i}</li>`)
+    .join("");
+  const nutritionHTML = analysis.nutrition_table
+    .map((n) => `
+      <tr class="border-b">
+        <td class="px-2 py-1 text-gray-700">${n.nutrient}</td>
+        <td class="px-2 py-1 text-right font-medium">${n.value}</td>
+      </tr>
+    `)
+    .join("");
+  const benefits = analysis.benefits.map((b) => `<li class="text-green-700">✅ ${b}</li>`).join("");
+  const concerns = analysis.concerns.map((c) => `<li class="text-red-600">⚠️ ${c}</li>`).join("");
+  const alternatives = analysis.alternatives
+    .map(
+      (alt) => `
+    <div class="border rounded-lg p-3 mb-2 bg-white shadow-sm">
+      <h4 class="font-semibold text-gray-800">${alt.name}</h4>
+      <p class="text-sm text-gray-600 mb-2">${alt.reason}</p>
+      <div class="flex gap-2">
+        <a href="${alt.links.blinkit}" target="_blank" class="text-blue-500 text-sm hover:underline">Blinkit</a>
+        <a href="${alt.links.bigbasket}" target="_blank" class="text-green-600 text-sm hover:underline">BigBasket</a>
+        <a href="${alt.links.zepto}" target="_blank" class="text-purple-600 text-sm hover:underline">Zepto</a>
+      </div>
+    </div>`
+    )
+    .join("");
+
+  return `
+  <div class="bg-white rounded-lg shadow-md p-4">
+    <div class="flex items-center gap-4 mb-3">
+      <img src="${img}" class="w-20 h-20 object-cover rounded">
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800">${product.product_name}</h3>
+        <p class="text-sm text-gray-500">${product.brands || "Unknown brand"}</p>
+      </div>
+    </div>
+    <p class="text-gray-700 mb-3">${analysis.summary}</p>
+    <h4 class="font-semibold text-gray-800 mb-1">🧾 Ingredients</h4>
+    <ul class="list-disc ml-5 mb-3">${ingredientsHTML}</ul>
+    <h4 class="font-semibold text-gray-800 mb-1">🍽️ Nutrition Facts (per 100g)</h4>
+    <table class="w-full text-sm border rounded mb-3">${nutritionHTML}</table>
+    <h4 class="font-semibold text-gray-800 mb-1">🌱 Benefits</h4>
+    <ul class="ml-4 mb-3">${benefits}</ul>
+    <h4 class="font-semibold text-gray-800 mb-1">⚠️ Concerns</h4>
+    <ul class="ml-4 mb-3">${concerns}</ul>
+    <h4 class="font-semibold text-gray-800 mb-1">🛒 Healthier Alternatives</h4>
+    ${alternatives}
+  </div>`;
+}
+
+// ---------------------------
+// 🔍 OpenFoodFacts
+// ---------------------------
+async function searchProducts(query) {
+  const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=6`);
+  const data = await res.json();
+  return data.products || [];
+}
+
+function showProductSelector(products, query) {
+  const overlay = document.createElement("div");
+  overlay.className = "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4";
+  overlay.innerHTML = `
+    <div class="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-lg p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold text-gray-800">Select your "${query}"</h3>
+        <button id="closeSelector" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        ${products
+          .map(
+            (p, i) => `
+          <div class="border rounded-lg p-3 hover:shadow-md cursor-pointer select-card" data-index="${i}">
+            <img src="${p.image_url || "https://via.placeholder.com/200"}" class="w-full h-32 object-contain mb-2 rounded">
+            <h4 class="font-semibold text-gray-800 text-sm truncate">${p.product_name || "Unnamed product"}</h4>
+            <p class="text-xs text-gray-500">${p.brands || "Unknown brand"}</p>
+          </div>`
+          )
+          .join("")}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector("#closeSelector").onclick = () => overlay.remove();
+  overlay.querySelectorAll(".select-card").forEach((card) =>
+    card.addEventListener("click", async () => {
+      const index = parseInt(card.dataset.index);
+      const chosen = products[index];
+      overlay.remove();
+      await analyzeSelectedProduct(chosen);
+    })
+  );
+}
+
+// ---------------------------
+// 🚀 Main Chat Logic
+// ---------------------------
+async function analyzeSelectedProduct(product) {
+  const aiBubble = appendMessage("assistant", "", true);
+  const analysis = await getProductAnalysis(product);
+  if (!analysis) return updateMessage(aiBubble, "Couldn’t analyze the product right now. Try again.");
+  const cardHTML = renderProductCard(product, analysis);
+  updateMessage(aiBubble, cardHTML);
+}
+
+async function handleSendMessage() {
+  const query = userInput.value.trim();
+  if (!query) return;
+  appendMessage("user", query);
+  userInput.value = "";
+
+  const aiBubble = appendMessage("assistant", "", true);
+  const products = await searchProducts(query);
+
+  if (products.length > 1) {
+    updateMessage(aiBubble, "I found several products — please choose one 👇");
+    showProductSelector(products, query);
+  } else if (products.length === 1) {
+    await analyzeSelectedProduct(products[0]);
+  } else {
+    // Generic reasoning fallback
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are an AI nutrition expert providing health analysis and advice." },
+        { role: "user", content: query },
+      ],
+      max_tokens: 700,
+    });
+    updateMessage(aiBubble, completion.choices[0].message.content.trim());
+  }
+}
+
+sendBtn.addEventListener("click", handleSendMessage);
+userInput.addEventListener("keydown", (e) => { if (e.key === "Enter") handleSendMessage(); });
 </script>
-<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+
 
 </body>
+
 </html>
