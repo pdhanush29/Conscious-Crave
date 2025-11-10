@@ -206,12 +206,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest"></script>
  <script type="module">
-import OpenAI from "https://cdn.jsdelivr.net/npm/openai@4.26.0/+esm";
-
-const client = new OpenAI({
-  apiKey: "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",
-  dangerouslyAllowBrowser: true,
-});
 
 const chatContainer = document.getElementById("chatContainer");
 const userInput = document.getElementById("userInput");
@@ -308,58 +302,20 @@ document.getElementById("barcodeBtn").addEventListener("click", startBarcodeScan
 // ---------------------------
 async function getProductAnalysis(product) {
   showLoader(true);
-  const prompt = `
-  You are a professional nutrition assistant for "Conscious Crave".
-  Analyze this packaged food product and return a structured JSON.
-  
-  Product Name: ${product.product_name || "Unknown"}
-  Brand: ${product.brands || "Unknown"}
-  Ingredients: ${product.ingredients_text || "Not available"}
-  Nutrients: ${JSON.stringify(product.nutriments || {})}
-  Nutri-Score: ${product.nutriscore_grade || "N/A"}
-  
-  Return strictly in this JSON format:
-  {
-    "summary": "1-paragraph short overview",
-    "ingredients": ["...","..."],
-    "nutrition_table": [
-      {"nutrient": "Energy", "value": "xx kcal"},
-      {"nutrient": "Sugar", "value": "xx g"},
-      {"nutrient": "Fat", "value": "xx g"},
-      {"nutrient": "Protein", "value": "xx g"},
-      {"nutrient": "Sodium", "value": "xx mg"}
-    ],
-    "benefits": ["...","..."],
-    "concerns": ["...","..."],
-    "alternatives": [
-      {
-        "name": "Product Name",
-        "reason": "Why it’s healthier",
-        "links": {
-          "blinkit": "https://blinkit.com/s/?q=Product+Name",
-          "bigbasket": "https://www.bigbasket.com/ps/?q=Product+Name",
-          "zepto": "https://www.zepto.com/search?query=Product+Name"
-        }
-      }
-    ]
-  }`;
-
-  const completion = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      { role: "system", content: "You are a structured data nutrition assistant for Conscious Crave." },
-      { role: "user", content: prompt },
-    ],
-    temperature: 0.5,
-    max_tokens: 1000,
-  });
-
-  showLoader(false);
-  let content = completion.choices[0].message.content.trim().replace(/```json|```/g, "").trim();
   try {
-    return JSON.parse(content);
-  } catch (e) {
-    console.error("Parsing error:", e, content);
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ product }),
+    });
+    const analysis = await response.json();
+    showLoader(false);
+    return analysis;
+  } catch (error) {
+    console.error('Error fetching analysis:', error);
+    showLoader(false);
     return null;
   }
 }
@@ -417,9 +373,20 @@ function renderProductCard(product, analysis) {
     <ul class="ml-4 mb-3">${concerns}</ul>
     <h4 class="font-semibold text-gray-800 mb-1">🛒 Healthier Alternatives</h4>
     ${alternatives}
+    <h4 class="font-semibold text-gray-800 mb-2 mt-4">🤔 Want to know more?</h4>
+    <div class="flex flex-wrap gap-2">
+      ${(analysis.follow_up || []).map(q => `<button class="follow-up-btn bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full hover:bg-gray-200">${q}</button>`).join('')}
+    </div>
   </div>`;
 }
 
+document.body.addEventListener('click', (e) => {
+  if (e.target.classList.contains('follow-up-btn')) {
+    const question = e.target.textContent;
+    userInput.value = question;
+    handleSendMessage();
+  }
+});
 // ---------------------------
 // 🔍 OpenFoodFacts
 // ---------------------------
@@ -490,16 +457,7 @@ async function handleSendMessage() {
   } else if (products.length === 1) {
     await analyzeSelectedProduct(products[0]);
   } else {
-    // Generic reasoning fallback
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are an AI nutrition expert providing health analysis and advice." },
-        { role: "user", content: query },
-      ],
-      max_tokens: 700,
-    });
-    updateMessage(aiBubble, completion.choices[0].message.content.trim());
+    updateMessage(aiBubble, "We couldn't find that product. Please try another search.");
   }
 }
 
