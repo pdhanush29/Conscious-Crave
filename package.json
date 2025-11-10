@@ -1,0 +1,14 @@
+{
+  "name": "conscious-crave-backend",
+  "version": "1.0.0",
+  "description": "Backend for Conscious Crave",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "openai": "^6.8.1"
+  }
+}
