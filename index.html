@@ -7,17 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<style>
-  #globalLoader .loading-dots span { width: 8px; height: 8px; margin: 0 3px; background-color: #4b5563; border-radius: 50%; display:inline-block; animation: bounce 1.2s infinite ease-in-out both; }
-  #globalLoader .loading-dots span:nth-child(1){ animation-delay: -0.24s;}
-  #globalLoader .loading-dots span:nth-child(2){ animation-delay: -0.12s;}
-  @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-  #globalLoader.hidden{ display:none; }
-  #globalLoader { display:flex; }
-</style>
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
     <style>
-
-
         .gradient-bg {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
@@ -145,370 +136,2219 @@
             0%, 80%, 100% { transform: scale(0); }
             40% { transform: scale(1); }
         }
+        /* Barcode Scanner Styles */
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .scanner-video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .scanner-frame {
+            width: 300px;
+            height: 160px;
+            border: 3px solid #3b82f6;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 0 0 100vmax rgba(0,0,0,0.5);
+        }
+        .scanner-frame::before,
+        .scanner-frame::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-color: #3b82f6;
+            border-style: solid;
+            border-width: 0;
+        }
+        .scanner-frame::before {
+            top: -3px;
+            left: -3px;
+            border-top-width: 4px;
+            border-left-width: 4px;
+        }
+        .scanner-frame::after {
+            bottom: -3px;
+            right: -3px;
+            border-bottom-width: 4px;
+            border-right-width: 4px;
+        }
+        .scanner-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+            animation: scanLine 2s linear infinite;
+        }
+        @keyframes scanLine {
+            0% { top: 0; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        .scanner-status {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            pointer-events: auto;
+        }
+        .cravebot-chat {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 380px;
+            max-height: 600px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .cravebot-chat.hidden {
+            transform: translateY(20px);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .cravebot-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .cravebot-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            max-height: 400px;
+        }
+        .cravebot-message {
+            margin-bottom: 12px;
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .cravebot-message.user {
+            background: #3b82f6;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        .cravebot-message.bot {
+            background: #f3f4f6;
+            color: #1f2937;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+        .cravebot-input-area {
+            padding: 12px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 8px;
+        }
+        .cravebot-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            z-index: 999;
+            transition: transform 0.3s ease;
+        }
+        .cravebot-toggle:hover {
+            transform: scale(1.1);
+        }
+        .cravebot-toggle.hidden {
+            display: none;
+        }
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 4px 0;
+        }
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        .barcode-input-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .barcode-input-group input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            letter-spacing: 2px;
+        }
+        .barcode-input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .barcode-input-group button {
+            padding: 10px 20px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .barcode-input-group button:hover {
+            background: #2563eb;
+        }
+        .scan-history-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .scan-history-item:hover {
+            background: #f3f4f6;
+        }
+        .scan-history-item img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            border-radius: 6px;
+            background: white;
+        }
+        .scan-history-item .info {
+            flex: 1;
+            min-width: 0;
+        }
+        .scan-history-item .info h5 {
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .scan-history-item .info p {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .scan-history-item .score-badge {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
     </style>
 </head>
-<body class="gradient-bg min-h-screen font-sans flex flex-col">
-  <!-- Header -->
-  <header class="bg-white shadow-sm sticky top-0 z-50">
-    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-      <div class="flex items-center space-x-2">
-        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
-          <i class="fas fa-leaf"></i>
+<body class="gradient-bg min-h-screen font-sans">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                    <i class="fas fa-leaf"></i>
+                </div>
+                <h1 class="text-xl font-bold text-gray-800">Conscious Crave</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="darkModeToggle" class="p-2 rounded-full hover:bg-gray-100">
+                    <i class="fas fa-moon text-gray-600"></i>
+                </button>
+                <button id="cravebotHeaderBtn" class="p-2 rounded-full hover:bg-gray-100 relative" title="CraveBot Nutritionist">
+                    <i class="fas fa-robot text-purple-600"></i>
+                    <span class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+                </button>
+                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
         </div>
-        <h1 class="text-xl font-bold text-gray-800">Conscious Crave</h1>
-      </div>
-      <button id="darkModeToggle" class="p-2 rounded-full hover:bg-gray-100">
-        <i class="fas fa-moon text-gray-600"></i>
-      </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 pb-20">
+        <!-- Registration Modal (hidden by default) -->
+        <div id="registrationModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800">Complete Your Profile</h3>
+                    <button id="closeRegistration" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div class="registration-steps mb-6">
+                        <div id="step1" class="registration-step active">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Account Setup</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Email or Mobile Number</label>
+                                    <input type="text" id="regEmail" placeholder="Enter email or phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                    <input type="password" id="regPassword" placeholder="Create password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="terms" class="mr-2">
+                                    <label for="terms" class="text-sm text-gray-600">I agree to Terms & Conditions</label>
+                                </div>
+                            </div>
+                            <button onclick="nextStep(1, 2)" class="w-full mt-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                Continue
+                            </button>
+                        </div>
+                        <div id="step2" class="registration-step">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Personal Details</h4>
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                                        <select id="regGender" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <option value="">Select</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                                        <input type="number" id="regAge" placeholder="Years" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Height (cm)</label>
+                                        <input type="number" id="regHeight" placeholder="cm" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+                                        <input type="number" id="regWeight" placeholder="kg" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Language Preference</label>
+                                    <select id="regLanguage" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="en">English</option>
+                                        <option value="hi">Hindi</option>
+                                        <option value="mr">Marathi</option>
+                                        <option value="ta">Tamil</option>
+                                        <option value="te">Telugu</option>
+                                        <option value="kn">Kannada</option>
+                                        <option value="ml">Malayalam</option>
+                                        <option value="bn">Bengali</option>
+                                        <option value="gu">Gujarati</option>
+                                        <option value="pa">Punjabi</option>
+                                        <option value="fr">French</option>
+                                        <option value="es">Spanish</option>
+                                        <option value="de">German</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-6">
+                                <button onclick="prevStep(2, 1)" class="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">Back</button>
+                                <button onclick="nextStep(2, 3)" class="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Continue</button>
+                            </div>
+                        </div>
+                        <div id="step3" class="registration-step">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Health Profile</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Allergies</label>
+                                    <div class="flex flex-wrap gap-2" id="allergyContainer">
+                                        <button class="allergy-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="nuts">Nuts</button>
+                                        <button class="allergy-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="dairy">Dairy</button>
+                                        <button class="allergy-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="gluten">Gluten</button>
+                                        <button class="allergy-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="shellfish">Shellfish</button>
+                                        <button class="allergy-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="soy">Soy</button>
+                                        <button class="allergy-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="eggs">Eggs</button>
+                                        <button class="allergy-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="preservatives">Preservatives</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Health Conditions</label>
+                                    <div class="flex flex-wrap gap-2" id="conditionContainer">
+                                        <button class="condition-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="diabetes">Diabetes</button>
+                                        <button class="condition-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="hypertension">Hypertension</button>
+                                        <button class="condition-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="cholesterol">Cholesterol</button>
+                                        <button class="condition-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="pcos">PCOS</button>
+                                        <button class="condition-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="thyroid">Thyroid</button>
+                                        <button class="condition-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="ibs">IBS</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Dietary Preferences</label>
+                                    <div class="flex flex-wrap gap-2" id="dietContainer">
+                                        <button class="diet-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="vegetarian">Vegetarian</button>
+                                        <button class="diet-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="vegan">Vegan</button>
+                                        <button class="diet-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="keto">Keto</button>
+                                        <button class="diet-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="gluten-free">Gluten-free</button>
+                                        <button class="diet-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="jain">Jain</button>
+                                        <button class="diet-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="paleo">Paleo</button>
+                                        <button class="diet-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-value="low-carb">Low-carb</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-6">
+                                <button onclick="prevStep(3, 2)" class="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">Back</button>
+                                <button onclick="completeRegistration()" class="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Complete Profile</button>
+                            </div>
+                        </div>
+                        <div id="step4" class="registration-step text-center py-8">
+                            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-check text-green-500 text-3xl"></i>
+                            </div>
+                            <h4 class="text-xl font-semibold mb-2 text-gray-800">Profile Completed!</h4>
+                            <p class="text-gray-600 mb-6">Your AI-powered food analysis is now personalized for you.</p>
+                            <button onclick="closeRegistrationModal()" class="w-full py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                Start Exploring
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barcode Scanner Modal -->
+        <div id="barcodeModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-barcode mr-2"></i>Scan Barcode</h3>
+                    <button id="closeBarcodeModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <!-- Camera Scanner -->
+                    <div id="cameraScannerSection" class="mb-6">
+                        <div class="scanner-container" id="scannerContainer">
+                            <video id="reader" style="width: 100%;" autoplay playsinline muted></video>
+                            <div class="scanner-overlay">
+                                <div class="scanner-frame">
+                                    <div class="scanner-line"></div>
+                                </div>
+                                <p class="text-white text-xs mt-2 opacity-80" style="pointer-events: auto;">Align barcode within the frame</p>
+                            </div>
+                            <div class="scanner-status" id="scannerStatus">
+                                <i class="fas fa-camera mr-2"></i>Initializing camera...
+                            </div>
+                        </div>
+                        <div class="flex justify-center gap-3 mt-4">
+                            <button id="toggleCameraBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                                <i class="fas fa-sync mr-2"></i>Switch Camera
+                            </button>
+                            <button id="stopScannerBtn" class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors">
+                                <i class="fas fa-stop mr-2"></i>Stop
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Manual Barcode Entry -->
+                    <div class="border-t pt-6">
+                        <h4 class="font-semibold text-gray-800 mb-3">Or Enter Barcode Manually</h4>
+                        <div class="barcode-input-group">
+                            <input type="text" id="manualBarcodeInput" placeholder="Enter barcode numbers..." maxlength="20">
+                            <button onclick="lookupBarcode()">
+                                <i class="fas fa-search mr-1"></i>Lookup
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Enter the barcode number found on the product packaging</p>
+                    </div>
+
+                    <!-- Recent Scans -->
+                    <div id="recentScansSection" class="border-t pt-6 mt-6 hidden">
+                        <h4 class="font-semibold text-gray-800 mb-3">Recent Scans</h4>
+                        <div id="recentScansList" class="space-y-2">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Selection Modal -->
+        <div id="productSelectionModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800">Select a Product</h3>
+                    <button id="closeSelectionModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div id="productSelectionList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                    <div id="noProductsFound" class="no-products hidden">
+                        <i class="fas fa-search fa-3x mb-4 text-gray-400"></i>
+                        <h4 class="text-xl font-semibold mb-2">No products found</h4>
+                        <p class="text-gray-600">Try a different search term or check your spelling</p>
+                    </div>
+                    <button id="analyzeSelectedProduct" class="w-full mt-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors hidden">
+                        <i class="fas fa-search mr-2"></i> Analyze Selected Product
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero Section -->
+        <section class="mb-12 text-center">
+            <h2 class="text-4xl font-bold text-gray-800 mb-4">The Truth Behind Taste</h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+                Make informed dietary choices with AI-powered food transparency. Search, scan, and discover healthier alternatives tailored just for you.
+            </p>
+
+            <!-- Search Section -->
+            <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6 mb-8">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="relative flex-grow">
+                        <input id="productSearch" type="text" placeholder="Search for a product..."
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="voiceSearchBtn" class="absolute right-3 top-3 text-gray-400 hover:text-blue-500">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                    </div>
+                    <button id="searchBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+                <div class="mt-4 flex justify-center gap-4 flex-wrap">
+                    <button id="takePhotoBtn" class="text-gray-600 hover:text-blue-500 flex flex-col items-center">
+                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-1">
+                            <i class="fas fa-camera text-xl"></i>
+                        </div>
+                        <span class="text-sm">Take Photo</span>
+                    </button>
+                    <button id="uploadImageBtn" class="text-gray-600 hover:text-blue-500 flex flex-col items-center">
+                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-1">
+                            <i class="fas fa-upload text-xl"></i>
+                        </div>
+                        <span class="text-sm">Upload Image</span>
+                    </button>
+                    <button id="scanBarcodeBtn" class="text-gray-600 hover:text-blue-500 flex flex-col items-center">
+                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-1">
+                            <i class="fas fa-barcode text-xl"></i>
+                        </div>
+                        <span class="text-sm">Scan Barcode</span>
+                    </button>
+                    <input type="file" id="imageUpload" accept="image/*" class="hidden" capture="environment">
+                </div>
+            </div>
+
+            <div class="flex justify-center gap-4">
+                <button id="howItWorksBtn" class="px-6 py-2 bg-white border border-blue-500 text-blue-500 rounded-full hover:bg-blue-50 transition-colors">
+                    How it works
+                </button>
+                <button id="watchDemoBtn" class="px-6 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors">
+                    Watch Demo
+                </button>
+            </div>
+        </section>
+
+        <!-- Recently Scanned -->
+        <section class="mb-12">
+            <h3 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                <i class="fas fa-history text-blue-500"></i> Recently Searched
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="recentlySearchedContainer">
+                <!-- Product Card 1 -->
+                <div class="product-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="p-4 flex items-start gap-4">
+                        <img src="https://images.openfoodfacts.org/images/products/073/762/806/4502/front_en.6.200.jpg" alt="Product" class="w-20 h-20 object-cover rounded-lg">
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Thai Peanut Noodle Kit</h4>
+                            <div class="flex items-center gap-2 mt-1">
+                                <div class="clean-score-fair w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                    45
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Clean Score</p>
+                                    <p class="text-xs text-yellow-600">Fair</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-4 pb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>Scanned via Barcode</span>
+                            <button class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                        </div>
+                        <button class="view-details-btn w-full py-2 bg-blue-50 text-blue-500 rounded-lg hover:bg-blue-100 transition-colors" data-barcode="0737628064502">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Card 2 -->
+                <div class="product-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="p-4 flex items-start gap-4">
+                        <img src="https://via.placeholder.com/80" alt="Product" class="w-20 h-20 object-cover rounded-lg">
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Fruit Yogurt Drink</h4>
+                            <div class="flex items-center gap-2 mt-1">
+                                <div class="clean-score-good w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                    68
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Clean Score</p>
+                                    <p class="text-xs text-blue-600">Good</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-4 pb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>Searched: 1 week ago</span>
+                            <button class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                        </div>
+                        <button class="view-details-btn w-full py-2 bg-blue-50 text-blue-500 rounded-lg hover:bg-blue-100 transition-colors">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Card 3 -->
+                <div class="product-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="p-4 flex items-start gap-4">
+                        <img src="https://via.placeholder.com/80" alt="Product" class="w-20 h-20 object-cover rounded-lg">
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Instant Noodles</h4>
+                            <div class="flex items-center gap-2 mt-1">
+                                <div class="clean-score-poor w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                    32
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Clean Score</p>
+                                    <p class="text-xs text-red-600">Poor</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-4 pb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>Searched: 3 days ago</span>
+                            <button class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                        </div>
+                        <button class="view-details-btn w-full py-2 bg-blue-50 text-blue-500 rounded-lg hover:bg-blue-100 transition-colors">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Nutritionist Tips -->
+        <section class="mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-lightbulb text-yellow-500"></i> Nutritionist Tips
+                </h3>
+                <button id="seeAllTipsBtn" class="text-blue-500 hover:text-blue-700 flex items-center gap-1">
+                    See all <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Healthy food" class="w-full h-48 object-cover">
+                        <div class="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                            <i class="fas fa-star mr-1"></i> Featured
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">Read Nutrition Labels Carefully</h4>
+                        <p class="text-gray-600 text-sm mb-3">Pay attention to serving sizes and ingredients list. The first few ingredients make up the majority of the product.</p>
+                        <div class="flex items-center text-sm text-gray-500">
+                            <i class="fas fa-user-md mr-2"></i> Dr. Priya Sharma
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Vegetables" class="w-full h-48 object-cover">
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">Choose Whole Foods</h4>
+                        <p class="text-gray-600 text-sm mb-3">Processed foods often contain hidden sugars, unhealthy fats, and additives. Opt for fresh, whole ingredients whenever possible.</p>
+                        <div class="flex items-center text-sm text-gray-500">
+                            <i class="fas fa-user-md mr-2"></i> Dr. Raj Patel
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Hydration" class="w-full h-48 object-cover">
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">Stay Hydrated</h4>
+                        <p class="text-gray-600 text-sm mb-3">Many people mistake thirst for hunger. Drink plenty of water throughout the day to maintain energy and support digestion.</p>
+                        <div class="flex items-center text-sm text-gray-500">
+                            <i class="fas fa-user-md mr-2"></i> Dr. Ananya Gupta
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- CraveBot Chat Widget -->
+    <div id="cravebotToggle" class="cravebot-toggle">
+        <i class="fas fa-robot"></i>
     </div>
-  </header>
 
-  <!-- Chat Interface -->
-  <main id="chatContainer" class="flex-grow overflow-y-auto px-4 py-6 max-w-3xl mx-auto w-full space-y-6">
-    <div class="text-center text-gray-500 mt-4">
-      <h2 class="text-2xl font-semibold text-gray-700 mb-2">The Truth Behind Taste 🍽️</h2>
-      <p>Ask anything about food — ingredients, health impact, or alternatives!</p>
+    <div id="cravebotChat" class="cravebot-chat hidden">
+        <div class="cravebot-header">
+            <i class="fas fa-robot text-2xl"></i>
+            <div>
+                <h4 class="font-bold">CraveBot</h4>
+                <p class="text-xs opacity-90">AI Nutritionist Assistant</p>
+            </div>
+            <button id="closeCravebot" class="ml-auto text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="cravebot-messages" id="cravebotMessages">
+            <div class="cravebot-message bot">
+                <i class="fas fa-robot mr-2 text-purple-500"></i>Hello! I'm CraveBot, your AI nutritionist. Ask me anything about food, nutrition, or product analysis!
+            </div>
+        </div>
+        <div class="cravebot-input-area">
+            <input type="text" id="cravebotInput" placeholder="Ask about nutrition..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+            <button id="cravebotSend" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
     </div>
-  </main>
 
+    <!-- Footer -->
+    <footer class="bg-white border-t">
+        <div class="container mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h4 class="text-lg font-semibold mb-4 text-gray-800">Conscious Crave</h4>
+                    <p class="text-gray-600 text-sm">Empowering you to make informed food choices through AI-powered analysis and personalized recommendations.</p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4 text-gray-800">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 hover:text-blue-500 text-sm">Home</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-blue-500 text-sm">About Us</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-blue-500 text-sm">How It Works</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-blue-500 text-sm">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4 text-gray-800">Resources</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 hover:text-blue-500 text-sm">Nutrition Guides</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-blue-500 text-sm">Healthy Recipes</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-blue-500 text-sm">Blog</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-blue-500 text-sm">FAQs</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4 text-gray-800">Connect With Us</h4>
+                    <div class="flex space-x-4 mb-4">
+                        <a href="#" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-blue-500 hover:text-white">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-blue-400 hover:text-white">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-pink-500 hover:text-white">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-red-500 hover:text-white">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                    </div>
+                    <p class="text-gray-600 text-sm">Download our mobile app:</p>
+                    <div class="flex space-x-2 mt-2">
+                        <a href="#" class="flex-1">
+                            <img src="https://via.placeholder.com/120x40?text=App+Store" alt="App Store" class="h-10">
+                        </a>
+                        <a href="#" class="flex-1">
+                            <img src="https://via.placeholder.com/120x40?text=Play+Store" alt="Play Store" class="h-10">
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-500 text-sm mb-4 md:mb-0">&copy; 2023 Conscious Crave. All rights reserved.</p>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-500 hover:text-gray-700 text-sm">Privacy Policy</a>
+                    <a href="#" class="text-gray-500 hover:text-gray-700 text-sm">Terms of Service</a>
+                    <a href="#" class="text-gray-500 hover:text-gray-700 text-sm">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
 
+    <script>
 
-  <!-- Chat Input -->
-  <footer class="bg-white border-t shadow-sm sticky bottom-0 z-50">
-    <div class="max-w-3xl mx-auto p-4 flex items-center gap-3">
-      <button id="uploadImageBtn" class="text-gray-500 hover:text-blue-500">
-        <i class="fas fa-camera text-xl"></i>
-      </button>
+        // ==================== API KEYS ====================
+        // OpenAI API Key - CraveBot Nutritionist Assistant
+        const OPENAI_API_KEY = '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';
 
-<!-- Scan Barcode Button -->
-<button id="barcodeBtn" class="text-gray-600 hover:text-blue-500 flex flex-col items-center">
-  <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-1">
-    <i class="fas fa-barcode text-xl"></i>
-  </div>
-  <span class="text-sm">Scan Barcode</span>
-</button>
+        // Gemini API Key - Firebase Auth, Firestore, Live Vision AI
+        const GEMINI_API_KEY = 'AIzaSyCYzjjAkc8I6sNFq5i_jgOwpiqypKONsiM';
 
-      <input type="file" id="imageUpload" accept="image/*" class="hidden" capture="environment">
-      <input id="userInput" type="text" placeholder="Ask about a product or ingredient..."
-        class="flex-grow border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 outline-none">
-      <button id="sendBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-        <i class="fas fa-paper-plane"></i>
-      </button>
-    </div>
-  </footer>
+        // OpenFoodFacts API - No key required (open database)
+        const OFF_API_BASE = 'https://world.openfoodfacts.org/api/v2';
+        const OFF_SEARCH_BASE = 'https://world.openfoodfacts.org/cgi/search.pl';
 
-  <!-- Loader -->
-  <div id="loaderOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center text-white z-50">
-    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-400 mb-4"></div>
-    <p class="text-lg font-semibold">Thinking...</p>
-  </div>
+        // ==================== USER PROFILE STATE ====================
+        let userProfile = {
+            email: '',
+            gender: '',
+            age: null,
+            height: null,
+            weight: null,
+            language: 'en',
+            allergies: [],
+            conditions: [],
+            dietPreferences: []
+        };
 
+        let scanHistory = JSON.parse(localStorage.getItem('cc_scanHistory') || '[]');
+        let zxingCodeReader = null;
+        let currentDeviceId = null;
+        let isScanning = false;
+        let currentFacingMode = 'environment';
+        let devicesList = [];
 
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest"></script>
- <script type="module">
-import OpenAI from "https://cdn.jsdelivr.net/npm/openai@4.26.0/+esm";
+        // ==================== OPENFOODFACTS API FUNCTIONS ====================
 
-const client = new OpenAI({
-  apiKey: "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",
-  dangerouslyAllowBrowser: true,
-});
-
-const chatContainer = document.getElementById("chatContainer");
-const userInput = document.getElementById("userInput");
-const sendBtn = document.getElementById("sendBtn");
-
-// ---------------------------
-// 💬 Chat Helpers
-// ---------------------------
-function appendMessage(role, content, isLoading = false) {
-  const msgDiv = document.createElement("div");
-  msgDiv.className = `flex ${role === "user" ? "justify-end" : "justify-start"} fade-in`;
-  msgDiv.innerHTML = `
-    <div class="max-w-[80%] px-4 py-3 rounded-2xl mb-2 shadow-sm ${
-      role === "user" ? "bg-blue-500 text-white" : "bg-gray-50 text-gray-800"
-    }">${isLoading ? '<span class="loading-dots"><span></span><span></span><span></span></span>' : content}</div>`;
-  chatContainer.appendChild(msgDiv);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-  return msgDiv;
-}
-function updateMessage(el, html) { el.innerHTML = html; chatContainer.scrollTop = chatContainer.scrollHeight; }
-function showLoader(show = true) { document.getElementById("loaderOverlay").classList.toggle("hidden", !show); }
-
-
-
-/* ------------------------------
-   📷 Barcode Scanning
--------------------------------*/
-async function startBarcodeScanner() {
-  // Create overlay
-  const overlay = document.createElement("div");
-  overlay.className =
-    "fixed inset-0 bg-black bg-opacity-70 z-50 flex flex-col items-center justify-center p-4";
-  overlay.innerHTML = `
-    <div class="bg-white rounded-xl p-4 shadow-lg flex flex-col items-center">
-      <h3 class="text-lg font-semibold text-gray-800 mb-2">Scan Barcode</h3>
-      <video id="barcodeVideo" class="w-80 h-60 rounded-lg mb-2 bg-black"></video>
-      <button id="closeScanner" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Cancel</button>
-      <p class="text-xs text-gray-500 mt-2">Align the barcode within the frame</p>
-    </div>`;
-  document.body.appendChild(overlay);
-
-  const codeReader = new ZXing.BrowserMultiFormatReader();
-  const video = overlay.querySelector("#barcodeVideo");
-  const closeBtn = overlay.querySelector("#closeScanner");
-
-  // Start camera
-  try {
-    const devices = await codeReader.listVideoInputDevices();
-    await codeReader.decodeFromVideoDevice(devices[0].deviceId, video, async (result, err) => {
-      if (result) {
-        const barcode = result.text;
-        codeReader.reset();
-        overlay.remove();
-        await analyzeBarcode(barcode);
-      }
-    });
-  } catch (err) {
-    alert("Camera access failed or not supported.");
-    overlay.remove();
-  }
-
-  closeBtn.onclick = () => {
-    codeReader.reset();
-    overlay.remove();
-  };
-}
-
-/* ------------------------------
-   🔍 Fetch product by barcode
--------------------------------*/
-async function analyzeBarcode(code) {
-  const aiBubble = appendMessage("assistant", "🔎 Scanning barcode...", true);
-  try {
-    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json`);
-    const data = await res.json();
-    if (!data || !data.product) {
-      updateMessage(aiBubble, "❌ No product found for that barcode.");
-      return;
-    }
-    await analyzeSelectedProduct(data.product);
-  } catch (err) {
-    console.error(err);
-    updateMessage(aiBubble, "⚠️ Couldn’t fetch product details. Try again.");
-  }
-}
-
-/* ------------------------------
-   🔘 Hook button
--------------------------------*/
-document.getElementById("barcodeBtn").addEventListener("click", startBarcodeScanner);
-
-// ---------------------------
-// 🧠 GPT Structured Analysis
-// ---------------------------
-async function getProductAnalysis(product) {
-  showLoader(true);
-  const prompt = `
-  You are a professional nutrition assistant for "Conscious Crave".
-  Analyze this packaged food product and return a structured JSON.
-  
-  Product Name: ${product.product_name || "Unknown"}
-  Brand: ${product.brands || "Unknown"}
-  Ingredients: ${product.ingredients_text || "Not available"}
-  Nutrients: ${JSON.stringify(product.nutriments || {})}
-  Nutri-Score: ${product.nutriscore_grade || "N/A"}
-  
-  Return strictly in this JSON format:
-  {
-    "summary": "1-paragraph short overview",
-    "ingredients": ["...","..."],
-    "nutrition_table": [
-      {"nutrient": "Energy", "value": "xx kcal"},
-      {"nutrient": "Sugar", "value": "xx g"},
-      {"nutrient": "Fat", "value": "xx g"},
-      {"nutrient": "Protein", "value": "xx g"},
-      {"nutrient": "Sodium", "value": "xx mg"}
-    ],
-    "benefits": ["...","..."],
-    "concerns": ["...","..."],
-    "alternatives": [
-      {
-        "name": "Product Name",
-        "reason": "Why it’s healthier",
-        "links": {
-          "blinkit": "https://blinkit.com/s/?q=Product+Name",
-          "bigbasket": "https://www.bigbasket.com/ps/?q=Product+Name",
-          "zepto": "https://www.zepto.com/search?query=Product+Name"
+        // Search products by text query
+        async function searchProduct(query) {
+            try {
+                showSearchLoading(true);
+                const response = await axios.get(`${OFF_SEARCH_BASE}?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=12`, {
+                    headers: {
+                        'User-Agent': 'ConsciousCrave/1.0 (contact@consciouscrave.com)'
+                    }
+                });
+                showSearchLoading(false);
+                return response.data.products || [];
+            } catch (error) {
+                console.error('Error searching products:', error);
+                showSearchLoading(false);
+                return [];
+            }
         }
-      }
-    ]
-  }`;
 
-  const completion = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      { role: "system", content: "You are a structured data nutrition assistant for Conscious Crave." },
-      { role: "user", content: prompt },
-    ],
-    temperature: 0.5,
-    max_tokens: 1000,
-  });
+        // Get product details by barcode (OpenFoodFacts v2 API)
+        async function getProductByBarcode(barcode) {
+            try {
+                // Clean barcode - remove any non-numeric characters
+                const cleanBarcode = barcode.replace(/[^0-9]/g, '');
+                console.log('Looking up barcode:', cleanBarcode);
 
-  showLoader(false);
-  let content = completion.choices[0].message.content.trim().replace(/```json|```/g, "").trim();
-  try {
-    return JSON.parse(content);
-  } catch (e) {
-    console.error("Parsing error:", e, content);
-    return null;
-  }
-}
+                const response = await axios.get(`${OFF_API_BASE}/product/${cleanBarcode}.json`, {
+                    timeout: 10000,
+                    headers: {
+                        'User-Agent': 'ConsciousCrave/1.0 (contact@consciouscrave.com)',
+                        'Accept': 'application/json'
+                    }
+                });
 
-// ---------------------------
-// 🎨 Render Beautiful Output
-// ---------------------------
-function renderProductCard(product, analysis) {
-  const img = product.image_url || "https://via.placeholder.com/120";
-  const ingredientsHTML = analysis.ingredients
-    .map((i) => `<li class="text-sm text-gray-700">${i}</li>`)
-    .join("");
-  const nutritionHTML = analysis.nutrition_table
-    .map((n) => `
-      <tr class="border-b">
-        <td class="px-2 py-1 text-gray-700">${n.nutrient}</td>
-        <td class="px-2 py-1 text-right font-medium">${n.value}</td>
-      </tr>
-    `)
-    .join("");
-  const benefits = analysis.benefits.map((b) => `<li class="text-green-700">✅ ${b}</li>`).join("");
-  const concerns = analysis.concerns.map((c) => `<li class="text-red-600">⚠️ ${c}</li>`).join("");
-  const alternatives = analysis.alternatives
-    .map(
-      (alt) => `
-    <div class="border rounded-lg p-3 mb-2 bg-white shadow-sm">
-      <h4 class="font-semibold text-gray-800">${alt.name}</h4>
-      <p class="text-sm text-gray-600 mb-2">${alt.reason}</p>
-      <div class="flex gap-2">
-        <a href="${alt.links.blinkit}" target="_blank" class="text-blue-500 text-sm hover:underline">Blinkit</a>
-        <a href="${alt.links.bigbasket}" target="_blank" class="text-green-600 text-sm hover:underline">BigBasket</a>
-        <a href="${alt.links.zepto}" target="_blank" class="text-purple-600 text-sm hover:underline">Zepto</a>
-      </div>
-    </div>`
-    )
-    .join("");
+                if (response.data.status === 1 && response.data.product) {
+                    return response.data.product;
+                }
+                return null;
+            } catch (error) {
+                console.error('Error fetching product by barcode:', error);
+                // Try fallback to v0 API if v2 fails
+                try {
+                    const fallbackResponse = await axios.get(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`, {
+                        timeout: 10000,
+                        headers: {
+                            'User-Agent': 'ConsciousCrave/1.0 (contact@consciouscrave.com)'
+                        }
+                    });
+                    if (fallbackResponse.data.status === 1 && fallbackResponse.data.product) {
+                        return fallbackResponse.data.product;
+                    }
+                } catch (fallbackError) {
+                    console.error('Fallback API also failed:', fallbackError);
+                }
+                return null;
+            }
+        }
 
-  return `
-  <div class="bg-white rounded-lg shadow-md p-4">
-    <div class="flex items-center gap-4 mb-3">
-      <img src="${img}" class="w-20 h-20 object-cover rounded">
-      <div>
-        <h3 class="text-lg font-semibold text-gray-800">${product.product_name}</h3>
-        <p class="text-sm text-gray-500">${product.brands || "Unknown brand"}</p>
-      </div>
-    </div>
-    <p class="text-gray-700 mb-3">${analysis.summary}</p>
-    <h4 class="font-semibold text-gray-800 mb-1">🧾 Ingredients</h4>
-    <ul class="list-disc ml-5 mb-3">${ingredientsHTML}</ul>
-    <h4 class="font-semibold text-gray-800 mb-1">🍽️ Nutrition Facts (per 100g)</h4>
-    <table class="w-full text-sm border rounded mb-3">${nutritionHTML}</table>
-    <h4 class="font-semibold text-gray-800 mb-1">🌱 Benefits</h4>
-    <ul class="ml-4 mb-3">${benefits}</ul>
-    <h4 class="font-semibold text-gray-800 mb-1">⚠️ Concerns</h4>
-    <ul class="ml-4 mb-3">${concerns}</ul>
-    <h4 class="font-semibold text-gray-800 mb-1">🛒 Healthier Alternatives</h4>
-    ${alternatives}
-  </div>`;
-}
+        // Get product details by code (for search results)
+        async function getProductDetails(barcode) {
+            return getProductByBarcode(barcode);
+        }
 
-// ---------------------------
-// 🔍 OpenFoodFacts
-// ---------------------------
-async function searchProducts(query) {
-  const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=6`);
-  const data = await res.json();
-  return data.products || [];
-}
+        // ==================== OPENAI / CRAVEBOT FUNCTIONS ====================
 
-function showProductSelector(products, query) {
-  const overlay = document.createElement("div");
-  overlay.className = "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4";
-  overlay.innerHTML = `
-    <div class="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-lg p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-semibold text-gray-800">Select your "${query}"</h3>
-        <button id="closeSelector" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        ${products
-          .map(
-            (p, i) => `
-          <div class="border rounded-lg p-3 hover:shadow-md cursor-pointer select-card" data-index="${i}">
-            <img src="${p.image_url || "https://via.placeholder.com/200"}" class="w-full h-32 object-contain mb-2 rounded">
-            <h4 class="font-semibold text-gray-800 text-sm truncate">${p.product_name || "Unnamed product"}</h4>
-            <p class="text-xs text-gray-500">${p.brands || "Unknown brand"}</p>
-          </div>`
-          )
-          .join("")}
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
+        // Analyze product with OpenAI (CraveBot)
+        async function analyzeProductWithAI(productData) {
+            try {
+                const prompt = `Analyze this food product and provide a comprehensive health assessment:
 
-  overlay.querySelector("#closeSelector").onclick = () => overlay.remove();
-  overlay.querySelectorAll(".select-card").forEach((card) =>
-    card.addEventListener("click", async () => {
-      const index = parseInt(card.dataset.index);
-      const chosen = products[index];
-      overlay.remove();
-      await analyzeSelectedProduct(chosen);
-    })
-  );
-}
+                Product Name: ${productData.product_name || 'Unknown'}
+                Brand: ${productData.brands || 'Unknown'}
+                Ingredients: ${productData.ingredients_text || 'Not available'}
+                Nutrition Facts per 100g: ${JSON.stringify(productData.nutriments) || 'Not available'}
+                Nutri-Score: ${productData.nutriscore_grade || 'Not available'}
+                Nova Group (Processing Level): ${productData.nova_group || 'Not available'}
+                Categories: ${productData.categories || 'Not available'}
+                Labels: ${productData.labels || 'Not available'}
+                Allergens: ${productData.allergens || 'None listed'}
 
-// ---------------------------
-// 🚀 Main Chat Logic
-// ---------------------------
-async function analyzeSelectedProduct(product) {
-  const aiBubble = appendMessage("assistant", "", true);
-  const analysis = await getProductAnalysis(product);
-  if (!analysis) return updateMessage(aiBubble, "Couldn’t analyze the product right now. Try again.");
-  const cardHTML = renderProductCard(product, analysis);
-  updateMessage(aiBubble, cardHTML);
-}
+                User Profile Context:
+                - Allergies: ${userProfile.allergies.join(', ') || 'None'}
+                - Health Conditions: ${userProfile.conditions.join(', ') || 'None'}
+                - Dietary Preferences: ${userProfile.dietPreferences.join(', ') || 'None'}
 
-async function handleSendMessage() {
-  const query = userInput.value.trim();
-  if (!query) return;
-  appendMessage("user", query);
-  userInput.value = "";
+                Please provide a detailed analysis including:
+                1. Cleanliness score (0-100) based on ingredient quality, processing level, and nutritional balance
+                2. Health benefits of key ingredients
+                3. Potential concerns (allergens, additives, preservatives, high sugar/salt/fat)
+                4. Personalized warnings based on user profile (allergies, conditions, diet)
+                5. Recommended healthier alternatives (provide 3 specific product names with brands)
+                6. Where to buy these alternatives (Amazon, BigBasket, JioMart, etc.)
 
-  const aiBubble = appendMessage("assistant", "", true);
-  const products = await searchProducts(query);
+                Format the response as JSON with these fields:
+                {
+                    "score": number (0-100),
+                    "analysis": string (detailed paragraph),
+                    "concerns": string[],
+                    "personalizedWarnings": string[],
+                    "alternatives": [
+                        {
+                            "name": string,
+                            "brand": string,
+                            "reason": string,
+                            "store_links": {
+                                "amazon": string (URL or search link),
+                                "bigbasket": string,
+                                "jiomart": string
+                            }
+                        }
+                    ]
+                }`;
 
-  if (products.length > 1) {
-    updateMessage(aiBubble, "I found several products — please choose one 👇");
-    showProductSelector(products, query);
-  } else if (products.length === 1) {
-    await analyzeSelectedProduct(products[0]);
-  } else {
-    // Generic reasoning fallback
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are an AI nutrition expert providing health analysis and advice." },
-        { role: "user", content: query },
-      ],
-      max_tokens: 700,
-    });
-    updateMessage(aiBubble, completion.choices[0].message.content.trim());
-  }
-}
+                const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+                    model: "gpt-3.5-turbo",
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are CraveBot, an expert nutritionist AI. Provide detailed, accurate, and personalized food analysis. Be thorough but concise. Always consider the user's health profile when making recommendations."
+                        },
+                        {
+                            role: "user",
+                            content: prompt
+                        }
+                    ],
+                    temperature: 0.3,
+                    max_tokens: 2000
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-sendBtn.addEventListener("click", handleSendMessage);
-userInput.addEventListener("keydown", (e) => { if (e.key === "Enter") handleSendMessage(); });
-</script>
+                let content = response.data.choices[0].message.content.trim();
 
+                // Remove Markdown code formatting if present
+                if (content.startsWith("```json")) {
+                    content = content.replace(/^```json/, '').replace(/```$/, '').trim();
+                } else if (content.startsWith("```")) {
+                    content = content.replace(/^```/, '').replace(/```$/, '').trim();
+                }
 
+                let analysis;
+                try {
+                    analysis = JSON.parse(content);
+                } catch (e) {
+                    console.error("Failed to parse AI analysis:", content);
+                    analysis = generateFallbackAnalysis(productData);
+                }
 
+                return analysis;
+            } catch (error) {
+                console.error('Error analyzing product with OpenAI:', error);
+                return generateFallbackAnalysis(productData);
+            }
+        }
+
+        // CraveBot chat function
+        async function askCraveBot(userMessage) {
+            try {
+                const systemPrompt = `You are CraveBot, an expert AI nutritionist assistant for Conscious Crave. You help users with:
+                - Food and nutrition questions
+                - Product analysis explanations
+                - Healthy eating advice
+                - Dietary recommendations based on their profile
+                - Understanding ingredients and additives
+
+                User Profile:
+                - Allergies: ${userProfile.allergies.join(', ') || 'None'}
+                - Health Conditions: ${userProfile.conditions.join(', ') || 'None'}
+                - Dietary Preferences: ${userProfile.dietPreferences.join(', ') || 'None'}
+
+                Be friendly, professional, and provide actionable advice. Keep responses concise but informative.`;
+
+                const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+                    model: "gpt-3.5-turbo",
+                    messages: [
+                        {
+                            role: "system",
+                            content: systemPrompt
+                        },
+                        {
+                            role: "user",
+                            content: userMessage
+                        }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 1000
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                return response.data.choices[0].message.content.trim();
+            } catch (error) {
+                console.error('CraveBot error:', error);
+                return "I'm having trouble connecting right now. Please try again in a moment!";
+            }
+        }
+
+        // Generate fallback analysis when OpenAI fails
+        function generateFallbackAnalysis(productData) {
+            let score = 50;
+            const concerns = [];
+            const personalizedWarnings = [];
+
+            // Basic scoring based on available data
+            if (productData.nutriments) {
+                const nutriments = productData.nutriments;
+                if (nutriments['sugars_100g'] > 20) {
+                    score -= 15;
+                    concerns.push("High sugar content (>20g per 100g)");
+                }
+                if (nutriments['salt_100g'] > 1.5) {
+                    score -= 15;
+                    concerns.push("High salt content (>1.5g per 100g)");
+                }
+                if (nutriments['saturated-fat_100g'] > 5) {
+                    score -= 10;
+                    concerns.push("High saturated fat content");
+                }
+                if (nutriments['fiber_100g'] > 3) {
+                    score += 10;
+                }
+            }
+
+            if (productData.nova_group === 4) {
+                score -= 15;
+                concerns.push("Ultra-processed food (Nova Group 4)");
+            } else if (productData.nova_group === 1) {
+                score += 15;
+            }
+
+            if (productData.additives_n > 5) {
+                score -= 10;
+                concerns.push(`Contains ${productData.additives_n} additives`);
+            }
+
+            // Check user profile for personalized warnings
+            if (userProfile.allergies.length > 0 && productData.allergens) {
+                const allergens = productData.allergens.toLowerCase();
+                userProfile.allergies.forEach(allergy => {
+                    if (allergens.includes(allergy.toLowerCase())) {
+                        personalizedWarnings.push(`⚠️ CONTAINS ${allergy.toUpperCase()} - Not safe for your allergy`);
+                    }
+                });
+            }
+
+            score = Math.max(0, Math.min(100, score));
+
+            return {
+                score: score,
+                analysis: `Based on available product data, this item scores ${score}/100. ${productData.product_name || 'This product'} ${score > 60 ? 'appears to be a relatively healthy option' : 'has several nutritional concerns that should be considered'}. Review the ingredients and nutrition facts carefully before consuming.`,
+                concerns: concerns.length > 0 ? concerns : ["Limited data available for full assessment"],
+                personalizedWarnings: personalizedWarnings,
+                alternatives: [
+                    {
+                        name: "Organic Alternative",
+                        brand: "Nature's Best",
+                        reason: "Similar product with organic ingredients",
+                        store_links: {
+                            amazon: "https://www.amazon.in/s?k=organic+food",
+                            bigbasket: "https://www.bigbasket.com/ps/?q=organic",
+                            jiomart: "https://www.jiomart.com/search/organic"
+                        }
+                    },
+                    {
+                        name: "Low-Sodium Version",
+                        brand: "HealthFirst",
+                        reason: "Reduced sodium for better heart health",
+                        store_links: {
+                            amazon: "https://www.amazon.in/s?k=low+sodium",
+                            bigbasket: "https://www.bigbasket.com/ps/?q=low+sodium",
+                            jiomart: "https://www.jiomart.com/search/low+sodium"
+                        }
+                    },
+                    {
+                        name: "Whole Food Alternative",
+                        brand: "FarmFresh",
+                        reason: "Minimally processed with natural ingredients",
+                        store_links: {
+                            amazon: "https://www.amazon.in/s?k=whole+foods",
+                            bigbasket: "https://www.bigbasket.com/ps/?q=whole+food",
+                            jiomart: "https://www.jiomart.com/search/whole+food"
+                        }
+                    }
+                ]
+            };
+        }
+
+        // ==================== GEMINI API FUNCTIONS ====================
+
+        // Gemini API for Live Vision AI (Image Analysis)
+        async function analyzeImageWithGemini(imageFile) {
+            try {
+                // Convert image to base64
+                const base64Image = await fileToBase64(imageFile);
+
+                const response = await axios.post(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+                    {
+                        contents: [{
+                            parts: [
+                                {
+                                    text: "Analyze this food product image. Identify the product name, brand, and any visible nutritional information. Provide a brief health assessment."
+                                },
+                                {
+                                    inline_data: {
+                                        mime_type: imageFile.type,
+                                        data: base64Image.split(',')[1]
+                                    }
+                                }
+                            ]
+                        }]
+                    },
+                    {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+
+                return response.data.candidates[0].content.parts[0].text;
+            } catch (error) {
+                console.error('Gemini Vision API error:', error);
+                return null;
+            }
+        }
+
+        // Gemini for text-based queries (alternative to OpenAI)
+        async function askGemini(prompt) {
+            try {
+                const response = await axios.post(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+                    {
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }]
+                    },
+                    {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+
+                return response.data.candidates[0].content.parts[0].text;
+            } catch (error) {
+                console.error('Gemini API error:', error);
+                return null;
+            }
+        }
+
+        // Helper: Convert file to base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ==================== BARCODE SCANNER FUNCTIONS ====================
+
+        // Initialize barcode scanner using ZXing
+        async function initBarcodeScanner() {
+            const video = document.getElementById('reader');
+            const status = document.getElementById('scannerStatus');
+
+            try {
+                status.innerHTML = '<i class="fas fa-camera mr-2"></i>Initializing camera...';
+
+                // Create a new ZXing code reader with multi-format support
+                zxingCodeReader = new ZXing.BrowserMultiFormatReader();
+
+                // Get list of video input devices
+                devicesList = await zxingCodeReader.listVideoInputDevices();
+
+                if (devicesList.length === 0) {
+                    status.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>No camera found. Use manual entry below.';
+                    return;
+                }
+
+                // Prefer back camera on mobile
+                let selectedDevice = devicesList[0];
+                if (currentFacingMode === 'environment') {
+                    const backCamera = devicesList.find(d => 
+                        d.label.toLowerCase().includes('back') ||
+                        d.label.toLowerCase().includes('rear') ||
+                        d.label.toLowerCase().includes('environment')
+                    );
+                    if (backCamera) selectedDevice = backCamera;
+                }
+                currentDeviceId = selectedDevice.deviceId;
+
+                isScanning = true;
+                status.innerHTML = '<i class="fas fa-camera mr-2"></i>Scanning... Hold barcode steady in frame';
+
+                // Start decoding from video stream
+                await zxingCodeReader.decodeFromVideoDevice(
+                    currentDeviceId,
+                    'reader',
+                    async (result, err) => {
+                        if (result && isScanning) {
+                            const barcode = result.getText();
+                            console.log('Barcode detected:', barcode, result.getBarcodeFormat());
+
+                            // Stop scanning immediately
+                            await stopScanner();
+
+                            // Close modal
+                            document.getElementById('barcodeModal').classList.add('hidden');
+                            document.getElementById('barcodeModal').classList.remove('flex');
+
+                            await lookupAndAnalyzeBarcode(barcode);
+                        }
+                        // err is normal when no barcode found in frame, ignore it
+                    }
+                );
+
+            } catch (error) {
+                console.error('Scanner initialization error:', error);
+                isScanning = false;
+                if (error.name === 'NotAllowedError') {
+                    status.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Camera access denied. Use manual entry below.';
+                } else if (error.name === 'NotFoundError') {
+                    status.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>No camera found. Use manual entry.';
+                } else {
+                    status.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Camera error: ' + (error.message || 'Unknown error');
+                }
+            }
+        }
+
+        // Stop scanner
+        async function stopScanner() {
+            isScanning = false;
+            if (zxingCodeReader) {
+                try {
+                    zxingCodeReader.reset();
+                    console.log('ZXing scanner stopped successfully');
+                } catch (err) {
+                    console.warn('Error stopping ZXing scanner:', err);
+                }
+            }
+        }
+
+        // Toggle camera (switch between front/back)
+        async function toggleCamera() {
+            await stopScanner();
+            if (devicesList.length > 1) {
+                const currentIdx = devicesList.findIndex(d => d.deviceId === currentDeviceId);
+                const nextIdx = (currentIdx + 1) % devicesList.length;
+                currentDeviceId = devicesList[nextIdx].deviceId;
+                currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            }
+            setTimeout(initBarcodeScanner, 300);
+        }
+
+        // Lookup barcode manually
+        async function lookupBarcode() {
+            const input = document.getElementById('manualBarcodeInput');
+            const barcode = input.value.trim();
+
+            if (!barcode) {
+                alert('Please enter a barcode number');
+                return;
+            }
+
+            document.getElementById('barcodeModal').classList.add('hidden');
+            await lookupAndAnalyzeBarcode(barcode);
+        }
+
+        // Lookup and analyze barcode
+        async function lookupAndAnalyzeBarcode(barcode) {
+            showGlobalLoading(true, 'Looking up product...');
+
+            const product = await getProductByBarcode(barcode);
+
+            if (!product) {
+                showGlobalLoading(false);
+                alert('Product not found in database. Try searching by name instead.');
+                return;
+            }
+
+            showGlobalLoading(true, 'Analyzing with AI...');
+            const analysis = await analyzeProductWithAI(product);
+
+            showGlobalLoading(false);
+
+            // Add to scan history
+            addToScanHistory(product, analysis);
+
+            // Show analysis
+            showProductAnalysis(product, analysis);
+        }
+
+        // Add to scan history
+        function addToScanHistory(product, analysis) {
+            const entry = {
+                barcode: product.code,
+                name: product.product_name || 'Unknown',
+                brand: product.brands || 'Unknown',
+                image: product.image_url || product.image_front_small_url || '',
+                score: analysis.score,
+                timestamp: new Date().toISOString()
+            };
+
+            // Remove duplicates, keep at start
+            scanHistory = scanHistory.filter(item => item.barcode !== entry.barcode);
+            scanHistory.unshift(entry);
+
+            // Keep only last 20
+            if (scanHistory.length > 20) scanHistory = scanHistory.slice(0, 20);
+
+            localStorage.setItem('cc_scanHistory', JSON.stringify(scanHistory));
+            updateRecentScansDisplay();
+        }
+
+        // Update recent scans display
+        function updateRecentScansDisplay() {
+            const container = document.getElementById('recentlySearchedContainer');
+            if (!container || scanHistory.length === 0) return;
+
+            // Update the first card with latest scan if available
+            const firstCard = container.querySelector('.product-card');
+            if (firstCard && scanHistory.length > 0) {
+                const latest = scanHistory[0];
+                const img = firstCard.querySelector('img');
+                const title = firstCard.querySelector('h4');
+                const scoreDiv = firstCard.querySelector('.clean-score-fair, .clean-score-good, .clean-score-excellent, .clean-score-poor');
+                const scoreText = firstCard.querySelector('.text-xs');
+
+                if (img) img.src = latest.image || 'https://via.placeholder.com/80';
+                if (title) title.textContent = latest.name;
+                if (scoreDiv) {
+                    scoreDiv.textContent = latest.score;
+                    scoreDiv.className = `w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg ${getScoreClass(latest.score)}`;
+                }
+                if (scoreText) {
+                    scoreText.textContent = getScoreRating(latest.score);
+                    scoreText.className = `text-xs ${getScoreTextClass(latest.score)}`;
+                }
+            }
+        }
+
+        // Show global loading overlay
+        function showGlobalLoading(show, message = 'Loading...') {
+            let overlay = document.getElementById('globalLoadingOverlay');
+
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'globalLoadingOverlay';
+                overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center';
+                overlay.innerHTML = `
+                    <div class="bg-white rounded-xl p-8 flex flex-col items-center">
+                        <div class="loading-dots mb-4">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <p class="text-gray-600 font-medium" id="globalLoadingText">Loading...</p>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+            }
+
+            const text = document.getElementById('globalLoadingText');
+            if (text) text.textContent = message;
+
+            overlay.style.display = show ? 'flex' : 'none';
+        }
+
+        // Show search button loading
+        function showSearchLoading(show) {
+            const btn = document.getElementById('searchBtn');
+            if (show) {
+                btn.classList.add('search-loading');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Searching...';
+            } else {
+                btn.classList.remove('search-loading');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search mr-2"></i> Search';
+            }
+        }
+
+        // ==================== UI DISPLAY FUNCTIONS ====================
+
+        // Show product analysis modal
+        function showProductAnalysis(product, analysis) {
+            const existingModal = document.getElementById('analysisModal');
+            if (existingModal) existingModal.remove();
+
+            const analysisModal = document.createElement('div');
+            analysisModal.id = 'analysisModal';
+            analysisModal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+            analysisModal.innerHTML = `
+                <div class="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-gray-800">Product Analysis</h3>
+                        <button id="closeAnalysisModal" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-6 analysis-content">
+                        <div class="flex flex-col md:flex-row gap-6 mb-6">
+                            <div class="flex-shrink-0">
+                                <img src="${product.image_url || product.image_front_url || 'https://via.placeholder.com/300'}" 
+                                     alt="${product.product_name || 'Product'}" 
+                                     class="w-48 h-48 object-contain rounded-lg bg-gray-50">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-2xl font-bold text-gray-800 mb-2">${product.product_name || 'Unknown Product'}</h4>
+                                <p class="text-gray-600 mb-4">${product.brands || 'Unknown Brand'}</p>
+
+                                <div class="flex items-center gap-4 mb-4">
+                                    <div class="w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-2xl ${getScoreClass(analysis.score)}">
+                                        ${analysis.score}
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Clean Score</p>
+                                        <p class="text-lg font-semibold ${getScoreTextClass(analysis.score)}">${getScoreRating(analysis.score)}</p>
+                                    </div>
+                                </div>
+
+                                ${product.nutriscore_grade ? `
+                                <div class="mb-4">
+                                    <p class="text-sm text-gray-600">Nutri-Score</p>
+                                    <span class="text-lg font-semibold px-3 py-1 rounded ${getNutriScoreClass(product.nutriscore_grade)}">
+                                        ${product.nutriscore_grade.toUpperCase()}
+                                    </span>
+                                </div>` : ''}
+
+                                ${product.nova_group ? `
+                                <div class="mb-4">
+                                    <p class="text-sm text-gray-600">Processing Level (Nova)</p>
+                                    <span class="text-sm font-semibold px-3 py-1 rounded ${getNovaClass(product.nova_group)}">
+                                        Group ${product.nova_group} - ${getNovaLabel(product.nova_group)}
+                                    </span>
+                                </div>` : ''}
+                            </div>
+                        </div>
+
+                        <!-- AI Insights -->
+                        <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 mb-6 border border-purple-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <h5 class="font-semibold text-gray-800 flex items-center gap-2">
+                                    <i class="fas fa-robot text-purple-500"></i> CraveBot AI Insights
+                                </h5>
+                                <button onclick="readAnalysis('${(analysis.analysis || '').replace(/'/g, "\'")}')" class="text-purple-500 hover:text-purple-700 p-2 rounded-full hover:bg-purple-100 transition-colors">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                            </div>
+                            <blockquote class="text-gray-700 italic border-l-4 border-purple-400 pl-4">
+                                ${analysis.analysis || 'Analysis not available.'}
+                            </blockquote>
+                        </div>
+
+                        <!-- Personalized Warnings -->
+                        ${analysis.personalizedWarnings && analysis.personalizedWarnings.length > 0 ? `
+                        <div class="bg-orange-50 rounded-lg p-4 mb-6 border border-orange-200">
+                            <h5 class="font-semibold text-orange-800 mb-2 flex items-center gap-2">
+                                <i class="fas fa-exclamation-triangle"></i> Personalized Warnings
+                            </h5>
+                            <ul class="space-y-2">
+                                ${analysis.personalizedWarnings.map(warning => `
+                                    <li class="text-orange-700 flex items-start gap-2">
+                                        <i class="fas fa-user-shield mt-1"></i>
+                                        <span>${warning}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        ` : ''}
+
+                        <!-- Concerns -->
+                        ${analysis.concerns && analysis.concerns.length > 0 ? `
+                        <div class="bg-red-50 rounded-lg p-4 mb-6 border border-red-200">
+                            <h5 class="font-semibold text-red-800 mb-2">Potential Concerns</h5>
+                            <ul class="list-disc pl-5 text-red-700 space-y-1">
+                                ${analysis.concerns.map(concern => `<li>${concern}</li>`).join('')}
+                            </ul>
+                        </div>
+                        ` : ''}
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <!-- Ingredients -->
+                            <div>
+                                <h5 class="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                                    <i class="fas fa-list-ul text-green-500"></i> Ingredients
+                                </h5>
+                                <div class="bg-white border rounded-lg divide-y max-h-64 overflow-y-auto">
+                                    ${product.ingredients && product.ingredients.length > 0 ? 
+                                        product.ingredients.map(ing => `
+                                            <div class="px-4 py-2 ${getIngredientRiskClass(ing.text || ing.id || '')}">
+                                                <span class="text-sm">${ing.text || ing.id || 'Unknown'}</span>
+                                                ${ing.percent_estimate ? `<span class="text-xs text-gray-400 ml-2">~${Math.round(ing.percent_estimate)}%</span>` : ''}
+                                            </div>
+                                        `).join('') 
+                                        : product.ingredients_text ? 
+                                            product.ingredients_text.split(',').map(ingredient => `
+                                                <div class="px-4 py-2 ${getIngredientRiskClass(ingredient.trim())}">
+                                                    <span class="text-sm">${ingredient.trim()}</span>
+                                                </div>
+                                            `).join('')
+                                        : '<p class="px-4 py-2 text-gray-500">No ingredients information available</p>'
+                                    }
+                                </div>
+
+                                ${product.additives_tags && product.additives_tags.length > 0 ? `
+                                <div class="mt-3">
+                                    <p class="text-sm text-gray-600 mb-1">Additives:</p>
+                                    <div class="flex flex-wrap gap-1">
+                                        ${product.additives_tags.map(additive => `
+                                            <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">${additive.replace('en:', '')}</span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
+
+                            <!-- Nutrition Facts -->
+                            <div>
+                                <h5 class="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                                    <i class="fas fa-chart-pie text-blue-500"></i> Nutrition Facts (per 100g)
+                                </h5>
+                                <div class="bg-white border rounded-lg divide-y">
+                                    ${product.nutriments ? `
+                                        <div class="px-4 py-2 flex justify-between">
+                                            <span class="text-sm">Energy</span>
+                                            <span class="text-sm font-medium">${product.nutriments['energy-kcal_100g'] || product.nutriments['energy_100g'] || 'N/A'} ${product.nutriments['energy-kcal_100g'] ? 'kcal' : 'kJ'}</span>
+                                        </div>
+                                        <div class="px-4 py-2 flex justify-between">
+                                            <span class="text-sm">Protein</span>
+                                            <span class="text-sm font-medium">${product.nutriments['proteins_100g'] || 'N/A'} g</span>
+                                        </div>
+                                        <div class="px-4 py-2 flex justify-between">
+                                            <span class="text-sm">Carbohydrates</span>
+                                            <span class="text-sm font-medium">${product.nutriments['carbohydrates_100g'] || 'N/A'} g</span>
+                                        </div>
+                                        <div class="px-4 py-2 flex justify-between">
+                                            <span class="text-sm">Sugars</span>
+                                            <span class="text-sm font-medium ${(product.nutriments['sugars_100g'] || 0) > 20 ? 'text-red-600 font-bold' : ''}">${product.nutriments['sugars_100g'] || 'N/A'} g</span>
+                                        </div>
+                                        <div class="px-4 py-2 flex justify-between">
+                                            <span class="text-sm">Fat</span>
+                                            <span class="text-sm font-medium">${product.nutriments['fat_100g'] || 'N/A'} g</span>
+                                        </div>
+                                        <div class="px-4 py-2 flex justify-between">
+                                            <span class="text-sm">Saturated Fat</span>
+                                            <span class="text-sm font-medium ${(product.nutriments['saturated-fat_100g'] || 0) > 5 ? 'text-red-600 font-bold' : ''}">${product.nutriments['saturated-fat_100g'] || 'N/A'} g</span>
+                                        </div>
+                                        <div class="px-4 py-2 flex justify-between">
+                                            <span class="text-sm">Fiber</span>
+                                            <span class="text-sm font-medium ${(product.nutriments['fiber_100g'] || 0) > 3 ? 'text-green-600 font-bold' : ''}">${product.nutriments['fiber_100g'] || 'N/A'} g</span>
+                                        </div>
+                                        <div class="px-4 py-2 flex justify-between">
+                                            <span class="text-sm">Salt</span>
+                                            <span class="text-sm font-medium ${(product.nutriments['salt_100g'] || 0) > 1.5 ? 'text-red-600 font-bold' : ''}">${product.nutriments['salt_100g'] || 'N/A'} g</span>
+                                        </div>
+                                        <div class="px-4 py-2 flex justify-between">
+                                            <span class="text-sm">Sodium</span>
+                                            <span class="text-sm font-medium">${product.nutriments['sodium_100g'] || 'N/A'} g</span>
+                                        </div>
+                                    ` : '<p class="px-4 py-2 text-gray-500">No nutrition information available</p>'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Healthier Alternatives -->
+                        ${analysis.alternatives && analysis.alternatives.length > 0 ? `
+                        <div>
+                            <h5 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <i class="fas fa-exchange-alt text-green-500"></i> Healthier Alternatives
+                            </h5>
+                            <div class="grid grid-cols-1 gap-4">
+                                ${analysis.alternatives.map((alt, index) => `
+                                    <div class="alternative-product bg-white rounded-lg p-4 shadow-sm border-l-4 ${index === 0 ? 'border-green-500' : index === 1 ? 'border-blue-500' : 'border-purple-500'}">
+                                        <div class="flex items-start gap-3">
+                                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${index === 0 ? 'bg-green-500' : index === 1 ? 'bg-blue-500' : 'bg-purple-500'}">
+                                                ${index + 1}
+                                            </div>
+                                            <div class="flex-1">
+                                                <h6 class="font-semibold text-lg text-gray-800">${alt.name}</h6>
+                                                <p class="text-sm text-gray-600">${alt.brand} • ${alt.reason}</p>
+
+                                                ${alt.store_links ? `
+                                                <div class="mt-3">
+                                                    <p class="text-xs text-gray-500 mb-2 uppercase tracking-wide">Available at:</p>
+                                                    <div class="flex flex-wrap gap-2">
+                                                        ${alt.store_links.amazon ? `
+                                                        <a href="${alt.store_links.amazon}" target="_blank" rel="noopener" class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm hover:bg-orange-200 transition-colors flex items-center gap-1">
+                                                            <i class="fab fa-amazon"></i> Amazon
+                                                        </a>
+                                                        ` : ''}
+                                                        ${alt.store_links.bigbasket ? `
+                                                        <a href="${alt.store_links.bigbasket}" target="_blank" rel="noopener" class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200 transition-colors flex items-center gap-1">
+                                                            <i class="fas fa-shopping-basket"></i> BigBasket
+                                                        </a>
+                                                        ` : ''}
+                                                        ${alt.store_links.jiomart ? `
+                                                        <a href="${alt.store_links.jiomart}" target="_blank" rel="noopener" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition-colors flex items-center gap-1">
+                                                            <i class="fas fa-store"></i> JioMart
+                                                        </a>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3 mt-6 pt-6 border-t">
+                            <button onclick="saveToFavorites('${product.code}')" class="flex-1 py-2 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 transition-colors flex items-center justify-center gap-2">
+                                <i class="fas fa-heart"></i> Save
+                            </button>
+                            <button onclick="shareProduct('${product.code}')" class="flex-1 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
+                                <i class="fas fa-share-alt"></i> Share
+                            </button>
+                            <button onclick="compareProduct('${product.code}')" class="flex-1 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors flex items-center justify-center gap-2">
+                                <i class="fas fa-balance-scale"></i> Compare
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(analysisModal);
+
+            // Close handler
+            document.getElementById('closeAnalysisModal').addEventListener('click', () => {
+                analysisModal.remove();
+            });
+
+            // Close on backdrop click
+            analysisModal.addEventListener('click', (e) => {
+                if (e.target === analysisModal) analysisModal.remove();
+            });
+        }
+
+        // ==================== HELPER FUNCTIONS ====================
+
+        function getScoreClass(score) {
+            if (score >= 80) return 'clean-score-excellent';
+            if (score >= 60) return 'clean-score-good';
+            if (score >= 40) return 'clean-score-fair';
+            return 'clean-score-poor';
+        }
+
+        function getScoreTextClass(score) {
+            if (score >= 80) return 'text-green-600';
+            if (score >= 60) return 'text-blue-600';
+            if (score >= 40) return 'text-yellow-600';
+            return 'text-red-600';
+        }
+
+        function getScoreRating(score) {
+            if (score >= 80) return 'Excellent';
+            if (score >= 60) return 'Good';
+            if (score >= 40) return 'Fair';
+            return 'Poor';
+        }
+
+        function getNutriScoreClass(grade) {
+            const gradeLower = (grade || '').toLowerCase();
+            if (gradeLower === 'a') return 'bg-green-500 text-white';
+            if (gradeLower === 'b') return 'bg-green-400 text-white';
+            if (gradeLower === 'c') return 'bg-yellow-500 text-white';
+            if (gradeLower === 'd') return 'bg-orange-500 text-white';
+            if (gradeLower === 'e') return 'bg-red-500 text-white';
+            return 'bg-gray-300 text-gray-800';
+        }
+
+        function getNovaClass(group) {
+            if (group === 1) return 'bg-green-100 text-green-800';
+            if (group === 2) return 'bg-yellow-100 text-yellow-800';
+            if (group === 3) return 'bg-orange-100 text-orange-800';
+            if (group === 4) return 'bg-red-100 text-red-800';
+            return 'bg-gray-100 text-gray-800';
+        }
+
+        function getNovaLabel(group) {
+            if (group === 1) return 'Unprocessed/Minimally Processed';
+            if (group === 2) return 'Processed Culinary Ingredients';
+            if (group === 3) return 'Processed Foods';
+            if (group === 4) return 'Ultra-Processed Foods';
+            return 'Unknown';
+        }
+
+        function getIngredientRiskClass(ingredient) {
+            const riskyIngredients = ['preservative', 'artificial', 'color', 'flavour', 'flavor', 'aspartame', 'msg', 'monosodium glutamate', 'high fructose corn syrup', 'hydrogenated', 'palm oil', 'e330', 'e211', 'e621'];
+            const mediumRiskIngredients = ['sugar', 'salt', 'sodium', 'corn syrup', 'maltodextrin', 'dextrose'];
+
+            const lowerIngredient = (ingredient || '').toLowerCase();
+
+            if (riskyIngredients.some(ri => lowerIngredient.includes(ri))) {
+                return 'ingredient-risk-high';
+            }
+            if (mediumRiskIngredients.some(mri => lowerIngredient.includes(mri))) {
+                return 'ingredient-risk-medium';
+            }
+            return 'ingredient-risk-low';
+        }
+
+        // Text to speech
+        function readAnalysis(text) {
+            if (!text) return;
+            const synth = window.speechSynthesis;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+            synth.cancel();
+            synth.speak(utterance);
+        }
+
+        // Save to favorites
+        function saveToFavorites(barcode) {
+            let favorites = JSON.parse(localStorage.getItem('cc_favorites') || '[]');
+            if (!favorites.includes(barcode)) {
+                favorites.push(barcode);
+                localStorage.setItem('cc_favorites', JSON.stringify(favorites));
+                alert('Added to favorites!');
+            } else {
+                alert('Already in favorites!');
+            }
+        }
+
+        // Share product
+        function shareProduct(barcode) {
+            const url = `${window.location.origin}${window.location.pathname}?product=${barcode}`;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Check out this product on Conscious Crave',
+                    url: url
+                });
+            } else {
+                navigator.clipboard.writeText(url);
+                alert('Link copied to clipboard!');
+            }
+        }
+
+        // Compare product
+        function compareProduct(barcode) {
+            alert('Compare feature coming soon! Save products to compare them side-by-side.');
+        }
+
+        // ==================== REGISTRATION FUNCTIONS ====================
+
+        function nextStep(current, next) {
+            document.getElementById(`step${current}`).classList.remove('active');
+            document.getElementById(`step${next}`).classList.add('active');
+        }
+
+        function prevStep(current, prev) {
+            document.getElementById(`step${current}`).classList.remove('active');
+            document.getElementById(`step${prev}`).classList.add('active');
+        }
+
+        function completeRegistration() {
+            // Collect all profile data
+            userProfile.email = document.getElementById('regEmail')?.value || '';
+            userProfile.gender = document.getElementById('regGender')?.value || '';
+            userProfile.age = document.getElementById('regAge')?.value || null;
+            userProfile.height = document.getElementById('regHeight')?.value || null;
+            userProfile.weight = document.getElementById('regWeight')?.value || null;
+            userProfile.language = document.getElementById('regLanguage')?.value || 'en';
+
+            // Collect selected allergies
+            userProfile.allergies = Array.from(document.querySelectorAll('.allergy-btn.bg-blue-100')).map(btn => btn.dataset.value);
+
+            // Collect selected conditions
+            userProfile.conditions = Array.from(document.querySelectorAll('.condition-btn.bg-blue-100')).map(btn => btn.dataset.value);
+
+            // Collect selected diets
+            userProfile.dietPreferences = Array.from(document.querySelectorAll('.diet-btn.bg-blue-100')).map(btn => btn.dataset.value);
+
+            // Save to localStorage
+            localStorage.setItem('cc_userProfile', JSON.stringify(userProfile));
+
+            nextStep(3, 4);
+        }
+
+        function closeRegistrationModal() {
+            document.getElementById('registrationModal').classList.add('hidden');
+        }
+
+        // ==================== CRAVEBOT CHAT FUNCTIONS ====================
+
+        function toggleCravebot() {
+            const chat = document.getElementById('cravebotChat');
+            const toggle = document.getElementById('cravebotToggle');
+
+            chat.classList.toggle('hidden');
+            toggle.classList.toggle('hidden');
+        }
+
+        async function sendCravebotMessage() {
+            const input = document.getElementById('cravebotInput');
+            const messages = document.getElementById('cravebotMessages');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Add user message
+            const userMsgDiv = document.createElement('div');
+            userMsgDiv.className = 'cravebot-message user';
+            userMsgDiv.textContent = message;
+            messages.appendChild(userMsgDiv);
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+
+            // Show typing indicator
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'cravebot-message bot';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+            messages.appendChild(typingDiv);
+            messages.scrollTop = messages.scrollHeight;
+
+            // Get response
+            const response = await askCraveBot(message);
+
+            // Remove typing indicator
+            const typing = document.getElementById('typingIndicator');
+            if (typing) typing.remove();
+
+            // Add bot response
+            const botMsgDiv = document.createElement('div');
+            botMsgDiv.className = 'cravebot-message bot';
+            botMsgDiv.innerHTML = '<i class="fas fa-robot mr-2 text-purple-500"></i>' + response;
+            messages.appendChild(botMsgDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        // ==================== AUTOCOMPLETE ====================
+
+        const searchInput = document.getElementById('productSearch');
+        const suggestionsBox = document.createElement('div');
+        suggestionsBox.className = "absolute bg-white border rounded-lg mt-1 shadow w-full z-50 max-h-60 overflow-y-auto hidden";
+        searchInput.parentElement.appendChild(suggestionsBox);
+
+        let autocompleteTimeout;
+        searchInput.addEventListener('input', async (e) => {
+            clearTimeout(autocompleteTimeout);
+            const query = e.target.value.trim();
+
+            if (query.length < 2) {
+                suggestionsBox.classList.add('hidden');
+                return;
+            }
+
+            autocompleteTimeout = setTimeout(async () => {
+                const products = await searchProduct(query);
+                suggestionsBox.innerHTML = '';
+
+                if (products.length === 0) {
+                    suggestionsBox.classList.add('hidden');
+                    return;
+                }
+
+                products.slice(0, 5).forEach(product => {
+                    const option = document.createElement('div');
+                    option.className = "px-4 py-2 cursor-pointer hover:bg-gray-100 flex items-center gap-2";
+                    option.innerHTML = `
+                        <img src="${product.image_url || 'https://via.placeholder.com/30'}" class="w-8 h-8 object-contain rounded">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium truncate">${product.product_name || 'Unnamed product'}</p>
+                            <p class="text-xs text-gray-500">${product.brands || ''}</p>
+                        </div>
+                    `;
+                    option.addEventListener('click', () => {
+                        searchInput.value = product.product_name;
+                        suggestionsBox.classList.add('hidden');
+                        performSearch(product.product_name);
+                    });
+                    suggestionsBox.appendChild(option);
+                });
+
+                suggestionsBox.classList.remove('hidden');
+            }, 300);
+        });
+
+        // Close suggestions on click outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                suggestionsBox.classList.add('hidden');
+            }
+        });
+
+        // ==================== EVENT LISTENERS ====================
+
+        // Search button
+        document.getElementById('searchBtn').addEventListener('click', () => {
+            const query = document.getElementById('productSearch').value.trim();
+            if (query) performSearch(query);
+        });
+
+        // Enter key on search
+        document.getElementById('productSearch').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = document.getElementById('productSearch').value.trim();
+                if (query) performSearch(query);
+            }
+        });
+
+        // Perform search
+        async function performSearch(query) {
+            const products = await searchProduct(query);
+
+            if (products.length > 0) {
+                const productList = document.getElementById('productSelectionList');
+                productList.innerHTML = '';
+
+                products.forEach(product => {
+                    const card = document.createElement('div');
+                    card.className = 'product-selection-card bg-white rounded-lg p-4 shadow';
+                    card.innerHTML = `
+                        <img src="${product.image_url || 'https://via.placeholder.com/150'}" alt="${product.product_name}" class="w-full h-32 object-contain mb-2">
+                        <h4 class="font-semibold text-gray-800 truncate">${product.product_name || 'Unknown product'}</h4>
+                        <p class="text-sm text-gray-600">${product.brands || 'Unknown brand'}</p>
+                        ${product.nutriscore_grade ? `<div class="mt-2">
+                            <span class="text-xs font-semibold px-2 py-1 rounded ${getNutriScoreClass(product.nutriscore_grade)}">
+                                Nutri-Score: ${product.nutriscore_grade.toUpperCase()}
+                            </span>
+                        </div>` : ''}
+                    `;
+                    card.addEventListener('click', async () => {
+                        showGlobalLoading(true, 'Analyzing product...');
+                        const details = await getProductDetails(product.code);
+                        if (details) {
+                            const analysis = await analyzeProductWithAI(details);
+                            addToScanHistory(details, analysis);
+                            showGlobalLoading(false);
+                            showProductAnalysis(details, analysis);
+                        } else {
+                            showGlobalLoading(false);
+                            alert('Could not fetch product details');
+                        }
+                    });
+                    productList.appendChild(card);
+                });
+
+                document.getElementById('noProductsFound').classList.add('hidden');
+                document.getElementById('productSelectionList').classList.remove('hidden');
+                document.getElementById('productSelectionModal').classList.remove('hidden');
+            } else {
+                document.getElementById('productSelectionList').classList.add('hidden');
+                document.getElementById('noProductsFound').classList.remove('hidden');
+                document.getElementById('productSelectionModal').classList.remove('hidden');
+            }
+        }
+
+        // Barcode scan button
+        document.getElementById('scanBarcodeBtn').addEventListener('click', () => {
+            document.getElementById('barcodeModal').classList.remove('hidden');
+            document.getElementById('barcodeModal').classList.add('flex');
+            initBarcodeScanner();
+        });
+
+        // Close barcode modal
+        document.getElementById('closeBarcodeModal').addEventListener('click', () => {
+            stopScanner();
+            document.getElementById('barcodeModal').classList.add('hidden');
+            document.getElementById('barcodeModal').classList.remove('flex');
+        });
+
+        // Toggle camera
+        document.getElementById('toggleCameraBtn').addEventListener('click', toggleCamera);
+
+        // Stop scanner
+        document.getElementById('stopScannerBtn').addEventListener('click', stopScanner);
+
+        // Manual barcode enter key
+        document.getElementById('manualBarcodeInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') lookupBarcode();
+        });
+
+        // Close selection modal
+        document.getElementById('closeSelectionModal').addEventListener('click', () => {
+            document.getElementById('productSelectionModal').classList.add('hidden');
+        });
+
+        // Close registration
+        document.getElementById('closeRegistration').addEventListener('click', closeRegistrationModal);
+
+        // Toggle allergy/condition/diet buttons
+        document.querySelectorAll('.allergy-btn, .condition-btn, .diet-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.toggle('bg-gray-100');
+                this.classList.toggle('bg-blue-100');
+                this.classList.toggle('text-blue-600');
+                this.classList.toggle('text-gray-700');
+            });
+        });
+
+        // Dark mode toggle
+        document.getElementById('darkModeToggle').addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            const icon = this.querySelector('i');
+            if (document.documentElement.classList.contains('dark')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+                document.body.classList.remove('gradient-bg');
+                document.body.classList.add('bg-gray-900');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+                document.body.classList.add('gradient-bg');
+                document.body.classList.remove('bg-gray-900');
+            }
+        });
+
+        // Image handling
+        document.getElementById('takePhotoBtn').addEventListener('click', () => {
+            document.getElementById('imageUpload').click();
+        });
+
+        document.getElementById('uploadImageBtn').addEventListener('click', () => {
+            document.getElementById('imageUpload').click();
+        });
+
+        document.getElementById('imageUpload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            showGlobalLoading(true, 'Analyzing image with AI...');
+
+            // Try Gemini Vision first
+            const geminiResult = await analyzeImageWithGemini(file);
+
+            if (geminiResult) {
+                showGlobalLoading(false);
+
+                // Show Gemini analysis in a modal
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+                modal.innerHTML = `
+                    <div class="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold"><i class="fas fa-eye text-purple-500 mr-2"></i>Vision AI Analysis</h3>
+                            <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <img src="${URL.createObjectURL(file)}" class="w-full h-64 object-contain rounded-lg mb-4 bg-gray-50">
+                        <div class="bg-purple-50 rounded-lg p-4">
+                            <p class="text-gray-700 whitespace-pre-line">${geminiResult}</p>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-4">Powered by Gemini Live Vision AI</p>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } else {
+                showGlobalLoading(false);
+                alert('Could not analyze image. Please try again or search by text.');
+            }
+        });
+
+        // Voice search
+        document.getElementById('voiceSearchBtn').addEventListener('click', () => {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.start();
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('productSearch').value = transcript;
+                    performSearch(transcript);
+                };
+
+                recognition.onerror = () => {
+                    alert('Voice recognition failed. Please try again.');
+                };
+            } else {
+                alert('Voice search not supported in this browser.');
+            }
+        });
+
+        // How it works
+        document.getElementById('howItWorksBtn').addEventListener('click', () => {
+            alert('How it works:\n\n1. Search or scan a product\n2. Our AI analyzes ingredients & nutrition\n3. Get personalized health insights\n4. Discover healthier alternatives');
+        });
+
+        // Watch demo
+        document.getElementById('watchDemoBtn').addEventListener('click', () => {
+            alert('Demo video coming soon! Try searching for a product or scanning a barcode to see the app in action.');
+        });
+
+        // See all tips
+        document.getElementById('seeAllTipsBtn').addEventListener('click', () => {
+            alert('All nutritionist tips page coming soon!');
+        });
+
+        // View details buttons
+        document.querySelectorAll('.view-details-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const barcode = this.dataset.barcode;
+                if (barcode) {
+                    showGlobalLoading(true, 'Loading product...');
+                    const product = await getProductByBarcode(barcode);
+                    if (product) {
+                        const analysis = await analyzeProductWithAI(product);
+                        showGlobalLoading(false);
+                        showProductAnalysis(product, analysis);
+                    } else {
+                        showGlobalLoading(false);
+                        alert('Could not load product details');
+                    }
+                } else {
+                    alert('Detailed view coming soon!');
+                }
+            });
+        });
+
+        // CraveBot toggle
+        document.getElementById('cravebotToggle').addEventListener('click', toggleCravebot);
+        document.getElementById('cravebotHeaderBtn').addEventListener('click', toggleCravebot);
+        document.getElementById('closeCravebot').addEventListener('click', toggleCravebot);
+
+        // CraveBot send
+        document.getElementById('cravebotSend').addEventListener('click', sendCravebotMessage);
+        document.getElementById('cravebotInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendCravebotMessage();
+        });
+
+        // ==================== INITIALIZATION ====================
+
+        // Load saved profile
+        const savedProfile = localStorage.getItem('cc_userProfile');
+        if (savedProfile) {
+            userProfile = JSON.parse(savedProfile);
+        }
+
+        // Update recent scans on load
+        updateRecentScansDisplay();
+
+        // Check for shared product in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedProduct = urlParams.get('product');
+        if (sharedProduct) {
+            setTimeout(async () => {
+                showGlobalLoading(true, 'Loading shared product...');
+                const product = await getProductByBarcode(sharedProduct);
+                if (product) {
+                    const analysis = await analyzeProductWithAI(product);
+                    showGlobalLoading(false);
+                    showProductAnalysis(product, analysis);
+                } else {
+                    showGlobalLoading(false);
+                }
+            }, 1000);
+        }
+
+        console.log('Conscious Crave initialized');
+        console.log('APIs configured: OpenAI (CraveBot), Gemini (Vision), OpenFoodFacts (Products)');
+    </script>
 </body>
-
 </html>
